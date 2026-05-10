@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { getAccessToken } from "@/lib/api";
 
 interface TelemetryData {
   temperature: number;
@@ -23,24 +24,9 @@ interface UseTelemetryReturn {
   disconnect: () => void;
 }
 
-// Simulate realistic sensor data with slight variations
-function generateSensorData(prevData?: TelemetryData): TelemetryData {
-  const baseTemp = prevData?.temperature ?? 23;
-  const baseBrightness = prevData?.brightness ?? 420;
-  const baseNoise = prevData?.noise ?? 38;
-
-  return {
-    temperature: Math.max(
-      18,
-      Math.min(30, baseTemp + (Math.random() - 0.5) * 0.8)
-    ),
-    brightness: Math.max(
-      100,
-      Math.min(800, baseBrightness + (Math.random() - 0.5) * 30)
-    ),
-    noise: Math.max(25, Math.min(60, baseNoise + (Math.random() - 0.5) * 4)),
-  };
-}
+const WS_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api")
+  .replace("http://", "ws://")
+  .replace("https://", "wss://");
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString("en-US", {
@@ -50,78 +36,121 @@ function formatTime(date: Date): string {
   });
 }
 
-export function useTelemetry(): UseTelemetryReturn {
+export function useTelemetry(deviceId: string): UseTelemetryReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [currentData, setCurrentData] = useState<TelemetryData>({
-    temperature: 23.5,
-    brightness: 420,
-    noise: 38,
+    temperature: 0,
+    brightness: 0,
+    noise: 0,
   });
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Initialize chart data with historical points
-  useEffect(() => {
-    const now = new Date();
-    const initialData: ChartDataPoint[] = [];
-    let prevData: TelemetryData | undefined;
-
-    for (let i = 29; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60000);
-      const data = generateSensorData(prevData);
-      prevData = data;
-      initialData.push({
-        time: formatTime(time),
-        ...data,
-      });
-    }
-
-    setChartData(initialData);
-    setCurrentData(prevData!);
-  }, []);
-
-  const updateData = useCallback(() => {
-    setCurrentData((prev) => {
-      const newData = generateSensorData(prev);
-      
-      setChartData((prevChart) => {
-        const newPoint: ChartDataPoint = {
-          time: formatTime(new Date()),
-          ...newData,
-        };
-        const updated = [...prevChart.slice(1), newPoint];
-        return updated;
-      });
-
-      return newData;
-    });
-  }, []);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const connect = useCallback(() => {
-    setIsConnected(true);
-    // Simulate real-time updates every 2 seconds
-    intervalRef.current = setInterval(updateData, 2000);
-  }, [updateData]);
+    if (!deviceId) return;
+    
+    const token = getAccessToken();
+    if (!token) return;
+
+    const wsUrl = `${WS_BASE_URL}/ws/web?token=${token}&deviceId=${deviceId}`;
+    console.log("Connecting to WebSocket:", wsUrl);
+    
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("WebSocket Connected");
+      setIsConnected(true);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    };
+
+    ws.onmessage = (event) => {
+      if (event.data === "pong") return;
+      
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "TELEMETRY_UPDATE") {
+          const payload = data.payload;
+          const newData: TelemetryData = {
+            temperature: payload.temperature,
+            brightness: payload.lightLux,
+            noise: payload.noiseLevel,
+          };
+
+          setCurrentData(newData);
+          
+          setChartData((prevChart) => {
+            const newPoint: ChartDataPoint = {
+              time: formatTime(new Date()),
+              ...newData,
+            };
+            const updated = [...prevChart.slice(-29), newPoint];
+            return updated;
+          });
+        }
+      } catch (err) {
+        console.error("Gagal parse message WebSocket", err);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket Disconnected");
+      setIsConnected(false);
+      // Reconnect after 5 seconds
+      reconnectTimeoutRef.current = setTimeout(connect, 5000);
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket Error", err);
+      ws.close();
+    };
+  }, [deviceId]);
 
   const disconnect = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     setIsConnected(false);
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+  }, []);
+
+  // Initialize chart data with 30 empty points if none exist
+  useEffect(() => {
+    if (chartData.length === 0) {
+      const emptyData: ChartDataPoint[] = Array.from({ length: 30 }, (_, i) => ({
+        time: formatTime(new Date(Date.now() - (29 - i) * 60000)),
+        temperature: 0,
+        brightness: 0,
+        noise: 0,
+      }));
+      setChartData(emptyData);
     }
   }, []);
 
-  // Auto-connect on mount
+  // Auto-connect when deviceId changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      connect();
-    }, 1000);
+    connect();
+    return () => disconnect();
+  }, [connect, disconnect, deviceId]);
 
-    return () => {
-      clearTimeout(timer);
-      disconnect();
-    };
-  }, [connect, disconnect]);
+  // Keep-alive ping
+  useEffect(() => {
+    const pingInterval = setInterval(() => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send("ping");
+      }
+    }, 30000);
+
+    return () => clearInterval(pingInterval);
+  }, []);
 
   return {
     currentData,

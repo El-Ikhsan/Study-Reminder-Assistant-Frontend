@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { api } from "@/lib/api";
 
 type SessionType = "focus" | "break";
 type LearningMedia = "book" | "laptop" | "phone" | "computer";
@@ -20,6 +21,7 @@ interface UsePomodoroReturn {
   sessionsCompleted: number;
   settings: PomodoroSettings;
   isComplete: boolean;
+  sessionId: string | null;
   toggle: () => void;
   reset: () => void;
   updateSettings: (newSettings: Partial<PomodoroSettings>) => void;
@@ -32,8 +34,9 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
   learningMedia: "laptop",
 };
 
-export function usePomodoro(): UsePomodoroReturn {
+export function usePomodoro(deviceId: string): UsePomodoroReturn {
   const [settings, setSettings] = useState<PomodoroSettings>(DEFAULT_SETTINGS);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(settings.focusDuration * 60);
   const [sessionType, setSessionType] = useState<SessionType>("focus");
@@ -49,19 +52,66 @@ export function usePomodoro(): UsePomodoroReturn {
     }
   }, []);
 
-  const toggle = useCallback(() => {
+  const toggle = useCallback(async () => {
     if (isComplete) return;
+    
+    if (!isRunning) {
+      // Start session via API
+      try {
+        const mediaFormatted = settings.learningMedia.charAt(0).toUpperCase() + settings.learningMedia.slice(1);
+        const res = await api.post("/pomodoro/start", {
+          deviceId,
+          recipe: {
+            focusDuration: settings.focusDuration,
+            breakDuration: settings.breakDuration,
+            cycles: settings.totalCycles,
+            media: mediaFormatted === "Phone" ? "HP" : mediaFormatted === "Computer" ? "Komputer" : mediaFormatted === "Book" ? "Buku" : "Laptop",
+            currentCycle: currentCycle,
+            currentMode: sessionType === "focus" ? "fokus" : "istirahat",
+            currentPhase: "awal",
+            status: "running"
+          }
+        });
+        if (res.data.success && res.data.sessionId) {
+          setSessionId(res.data.sessionId);
+        }
+      } catch (err) {
+        console.error("Gagal memulai pomodoro", err);
+        // Fallback to local if API fails or device offline?
+      }
+    } else {
+      // Pause or stop? API doc says POST /api/pomodoro/stop for cancel.
+      // Usually toggle means pause, but the API doc only has start and stop.
+      // If we are stopping it:
+      if (sessionId) {
+        try {
+          await api.post("/pomodoro/stop", { sessionId, deviceId });
+        } catch (err) {
+          console.error("Gagal menghentikan pomodoro", err);
+        }
+        setSessionId(null);
+      }
+    }
+    
     setIsRunning((prev) => !prev);
-  }, [isComplete]);
+  }, [isComplete, isRunning, deviceId, settings, currentCycle, sessionType, sessionId]);
 
-  const reset = useCallback(() => {
+  const reset = useCallback(async () => {
+    if (sessionId) {
+      try {
+        await api.post("/pomodoro/stop", { sessionId, deviceId });
+      } catch (err) {
+        console.error("Gagal reset pomodoro", err);
+      }
+      setSessionId(null);
+    }
     clearTimer();
     setIsRunning(false);
     setSessionType("focus");
     setCurrentCycle(1);
     setTimeLeft(settings.focusDuration * 60);
     setIsComplete(false);
-  }, [settings.focusDuration, clearTimer]);
+  }, [settings.focusDuration, clearTimer, sessionId, deviceId]);
 
   const updateSettings = useCallback((newSettings: Partial<PomodoroSettings>) => {
     setSettings((prev) => {
@@ -125,6 +175,7 @@ export function usePomodoro(): UsePomodoroReturn {
     sessionsCompleted,
     settings,
     isComplete,
+    sessionId,
     toggle,
     reset,
     updateSettings,

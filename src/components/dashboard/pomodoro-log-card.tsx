@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { api } from "@/lib/api";
 
 import {
   RefreshCw,
@@ -33,135 +34,6 @@ import type {
   SensorEvent,
   SessionLogData,
 } from "@/types/pomodoro";
-
-// Mock data for demonstration
-const MOCK_SESSIONS: PomodoroSession[] = [
-  {
-    id: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-    deviceId: "f74017a7-fc9f-4f53-853e-75f938636863",
-    focusDuration: 5,
-    restDuration: 2,
-    targetCycles: 1,
-    media: "Laptop",
-    currentCycle: 1,
-    currentMode: "istirahat",
-    currentPhase: "akhir",
-    status: "completed",
-    startedAt: "2026-05-07T17:23:03.000Z",
-    endedAt: null,
-  },
-  {
-    id: "af46efbe-93a0-48e4-8fe6-18d44b3b52c9",
-    deviceId: "f74017a7-fc9f-4f53-853e-75f938636863",
-    focusDuration: 5,
-    restDuration: 5,
-    targetCycles: 1,
-    media: "Laptop",
-    currentCycle: 1,
-    currentMode: "istirahat",
-    currentPhase: "akhir",
-    status: "completed",
-    startedAt: "2026-05-06T13:09:35.000Z",
-    endedAt: null,
-  },
-];
-
-const MOCK_CURRENT_SESSION_DATA: SessionLogData = {
-  logs: [
-    {
-      id: "e655f64f-fa6f-480f-b9d8-b3de769d8e92",
-      sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-      logType: "phase_alert",
-      currentCycle: 1,
-      pomodoroMode: "fokus",
-      triggerContext: "Pomodoro: Fase Awal Fokus [Waktu: 5 Menit] [Media: Laptop]",
-      aiResponse: "Fokuslah di depan laptop. 5 menit pertama adalah penentu keberhasilan sesi belajarmu.",
-      emotion: "IDLE",
-      createdAt: "2026-05-07T17:23:07.000Z",
-    },
-    {
-      id: "f947fcf6-60a9-4937-be08-3678cb18f43f",
-      sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-      logType: "phase_alert",
-      currentCycle: 1,
-      pomodoroMode: "fokus",
-      triggerContext: "Pomodoro: Fase Pertengahan Fokus [Waktu: 3 Menit]",
-      aiResponse: "Sisa 3 menit. Jangan biarkan kelelahan menghentikanmu, segera kembali bekerja.",
-      emotion: "IDLE",
-      createdAt: "2026-05-07T17:25:36.000Z",
-    },
-    {
-      id: "55a72f0d-cb3f-475f-a2a8-d212b725c118",
-      sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-      logType: "phase_alert",
-      currentCycle: 1,
-      pomodoroMode: "fokus",
-      triggerContext: "Pomodoro: Fase Akhir Fokus [Waktu: 22 Detik] [Media: Laptop]",
-      aiResponse: "Akhir fase fokus. 22 detik terakhir di depan laptop, jangan biarkan matamu lelah.",
-      emotion: "IDLE",
-      createdAt: "2026-05-07T17:27:44.000Z",
-    },
-    {
-      id: "ec0b2e7c-26ef-41a5-ac67-584506469d09",
-      sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-      logType: "phase_alert",
-      currentCycle: 1,
-      pomodoroMode: "istirahat",
-      triggerContext: "Pomodoro: Fase Istirahat Pendek [Waktu: 2 Menit]",
-      aiResponse: "Berdiri dan berjalanlah. 2 menit sudah cukup untuk kamu melonggarkan otot-ototmu.",
-      emotion: "DARK",
-      createdAt: "2026-05-07T17:28:07.000Z",
-    },
-    {
-      id: "a823fee5-79e3-4529-aa95-7a81ab08596e",
-      sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-      logType: "phase_alert",
-      currentCycle: 1,
-      pomodoroMode: "istirahat",
-      triggerContext: "Pomodoro: Fase Peringatan Istirahat Akhir [Waktu: 11 Detik]",
-      aiResponse: "Waktu istirahat hampir habis. Segera kembali ke meja belajarmu dalam 11 detik terakhir ini.",
-      emotion: "IDLE",
-      createdAt: "2026-05-07T17:29:56.000Z",
-    },
-    {
-      id: "35696538-15cf-4856-af9e-993c4ba2fb1b",
-      sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-      logType: "phase_alert",
-      currentCycle: 1,
-      pomodoroMode: "istirahat",
-      triggerContext: "Pomodoro: Sesi Selesai [Putaran: 1] [Media: Laptop]",
-      aiResponse: "Sesi 1 selesai. Kumpulkan semua catatan di layar laptopmu sekarang juga.",
-      emotion: "IDLE",
-      createdAt: "2026-05-07T17:30:10.000Z",
-    },
-  ],
-  sensorEvents: [
-    {
-      id: "4f24b0ca-c747-457f-9494-0a56da13c4fe",
-      sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-      eventType: "interupsi",
-      triggerContext: "Interupsi: Suara Bising [Media: Laptop]",
-      aiResponse: "Keributan ini mengganggu konsentrasiku. Tolong tutup pintu agar suara bising itu hilang.",
-      emotion: "NOISY",
-      temperatureAtTime: 28,
-      lightAtTime: 647,
-      noiseAtTime: 81,
-      createdAt: "2026-05-07T17:26:27.000Z",
-    },
-    {
-      id: "b6f30268-5625-445b-b862-6a5eb12aa05a",
-      sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-      eventType: "pemulihan",
-      triggerContext: "Transisi: Suara Bising ke Ramai",
-      aiResponse: "Keributan berkurang menjadi ramai yang wajar. Kita bisa memulihkan kondisi ruangan ini.",
-      emotion: "IDLE",
-      temperatureAtTime: 28,
-      lightAtTime: 647,
-      noiseAtTime: 73,
-      createdAt: "2026-05-07T17:27:00.000Z",
-    },
-  ],
-};
 
 // Helper functions
 function formatDate(dateString: string): string {
@@ -310,14 +182,13 @@ function SessionLogView({
     if (filter === "logs") combined = logs;
     if (filter === "sensors") combined = sensors;
 
-    return combined.sort((a, b) => a.date - b.date); // Urut dari yang terlama ke terbaru (kronologis)
+    return combined.sort((a, b) => a.date - b.date);
   };
 
   const filteredItems = getFilteredItems();
 
   return (
     <div className="space-y-4 h-full flex flex-col">
-      {/* Action Bar (Refresh + Filter) */}
       <div className="flex items-center justify-between shrink-0">
         <Button
           variant="outline"
@@ -355,7 +226,6 @@ function SessionLogView({
       <ScrollArea className="flex-1 pr-4 -mr-4 min-h-0">
         <div className="space-y-3 pb-4">
           {filteredItems.map((item) => {
-            // Render Pomodoro
             if (item.type === "log") {
               const log = item.data as PomodoroLog;
               const config = getLogTypeConfig(log.logType);
@@ -391,7 +261,6 @@ function SessionLogView({
               );
             }
 
-            // Render Sensor Event
             if (item.type === "sensor") {
               const event = item.data as SensorEvent;
               const config = getEventTypeConfig(event.eventType);
@@ -502,30 +371,100 @@ function SessionListItem({
 }
 
 // Main Component
-export function PomodoroLogCard() {
+interface PomodoroLogCardProps {
+  currentSessionId: string | null;
+}
+
+export function PomodoroLogCard({ currentSessionId }: PomodoroLogCardProps) {
   const [activeView, setActiveView] = useState<"current" | "history">("current");
   const [selectedSession, setSelectedSession] = useState<PomodoroSession | null>(null);
-  const [sessionLogData, setSessionLogData] = useState<SessionLogData | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const [sessions, setSessions] = useState<PomodoroSession[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  
+  const [currentSessionLogs, setCurrentSessionLogs] = useState<SessionLogData>({ logs: [], sensorEvents: [] });
+  const [historySessionLogs, setHistorySessionLogs] = useState<SessionLogData | null>(null);
+  
+  const [isRefreshingCurrent, setIsRefreshingCurrent] = useState(false);
+  const [isLoadingHistoryLogs, setIsLoadingHistoryLogs] = useState(false);
 
-  // Simulate fetching current session data
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsRefreshing(false);
-  };
+  // Auto-switch to current tab when a session starts
+  useEffect(() => {
+    if (currentSessionId) {
+      setActiveView("current");
+      fetchCurrentLogs();
+    }
+  }, [currentSessionId]);
 
-  // Simulate fetching session log data
-  const handleSelectSession = async (session: PomodoroSession) => {
+  const fetchCurrentLogs = useCallback(async () => {
+    if (!currentSessionId) return;
+    setIsRefreshingCurrent(true);
+    try {
+      const res = await api.get(`/pomodoro/histories/${currentSessionId}`);
+      if (res.data.success) {
+        const { pomodoroLogs, sensorLogs } = res.data.data;
+        setCurrentSessionLogs({
+          logs: pomodoroLogs || [],
+          sensorEvents: sensorLogs || []
+        });
+      }
+    } catch (err) {
+      console.error("Gagal mengambil log sesi aktif", err);
+    } finally {
+      setIsRefreshingCurrent(false);
+    }
+  }, [currentSessionId]);
+
+  const fetchHistorySessions = useCallback(async () => {
+    setIsLoadingSessions(true);
+    try {
+      const res = await api.get("/pomodoro/sessions");
+      if (res.data.success) {
+        setSessions(res.data.data);
+      }
+    } catch (err) {
+      console.error("Gagal mengambil riwayat sesi", err);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, []);
+
+  const fetchHistoryDetails = useCallback(async (sessionId: string) => {
+    setIsLoadingHistoryLogs(true);
+    try {
+      const res = await api.get(`/pomodoro/histories/${sessionId}`);
+      if (res.data.success) {
+        const { pomodoroLogs, sensorLogs } = res.data.data;
+        setHistorySessionLogs({
+          logs: pomodoroLogs || [],
+          sensorEvents: sensorLogs || []
+        });
+      }
+    } catch (err) {
+      console.error("Gagal mengambil detail riwayat", err);
+    } finally {
+      setIsLoadingHistoryLogs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeView === "history") {
+      fetchHistorySessions();
+    }
+  }, [activeView, fetchHistorySessions]);
+
+  useEffect(() => {
+    if (selectedSession) {
+      fetchHistoryDetails(selectedSession.id);
+    } else {
+      setHistorySessionLogs(null);
+    }
+  }, [selectedSession, fetchHistoryDetails]);
+
+  const handleSelectSession = (session: PomodoroSession) => {
     setSelectedSession(session);
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSessionLogData(MOCK_CURRENT_SESSION_DATA);
-    setIsLoading(false);
   };
+
 
   return (
     <div className="glass-panel rounded-2xl p-5 h-[600px] flex flex-col">
@@ -562,29 +501,46 @@ export function PomodoroLogCard() {
         </div>
 
         <TabsContent value="current" className="mt-0 flex-1 min-h-0 outline-none">
-          <SessionLogView
-            data={MOCK_CURRENT_SESSION_DATA}
-            isCurrentSession={true}
-            onRefresh={handleRefresh}
-            isRefreshing={isRefreshing}
-          />
+          {!currentSessionId ? (
+            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-60">
+              <div className="w-16 h-16 rounded-full bg-secondary/30 flex items-center justify-center">
+                <Play className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-medium">Tidak ada sesi aktif</p>
+                <p className="text-xs text-muted-foreground">Mulai sesi Pomodoro untuk melihat log real-time</p>
+              </div>
+            </div>
+          ) : (
+            <SessionLogView
+              data={currentSessionLogs}
+              isCurrentSession={true}
+              onRefresh={fetchCurrentLogs}
+              isRefreshing={isRefreshingCurrent}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="history" className="mt-0 flex-1 min-h-0 outline-none">
           {!selectedSession ? (
             <ScrollArea className="h-full pr-3 -mr-3">
               <div className="space-y-3 pb-2">
-                {MOCK_SESSIONS.map((session) => (
-                  <SessionListItem
-                    key={session.id}
-                    session={session}
-                    onClick={() => handleSelectSession(session)}
-                  />
-                ))}
-                {MOCK_SESSIONS.length === 0 && (
+                {isLoadingSessions ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    Memuat riwayat...
+                  </div>
+                ) : sessions.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">
                     Belum ada riwayat sesi
                   </div>
+                ) : (
+                  sessions.map((session) => (
+                    <SessionListItem
+                      key={session.id}
+                      session={session}
+                      onClick={() => handleSelectSession(session)}
+                    />
+                  ))
                 )}
               </div>
             </ScrollArea>
@@ -633,13 +589,17 @@ export function PomodoroLogCard() {
                 </Button>
               </div>
               <div className="p-4 flex-1 min-h-0">
-                {isLoading ? (
+                {isLoadingHistoryLogs ? (
                   <div className="flex items-center justify-center h-full">
                     <RefreshCw className="w-6 h-6 text-primary animate-spin" />
                   </div>
-                ) : sessionLogData ? (
-                  <SessionLogView data={sessionLogData} isCurrentSession={false} />
-                ) : null}
+                ) : historySessionLogs ? (
+                  <SessionLogView data={historySessionLogs} isCurrentSession={false} />
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    Gagal memuat log
+                  </div>
+                )}
               </div>
             </div>
           )}

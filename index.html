@@ -1,15 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="/rinchan.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary Meta Tags -->
   <title>Rinchan - IoT Dashboard</title>
   <meta name="description" content="Premium IoT assistant dashboard for Rinchan" />
+
+  <!-- PWA / Icons (Menggantikan konfigurasi icons di Next.js) -->
+  <link rel="icon" type="image/png" href="/rinchan.png" />
+  <link rel="apple-touch-icon" href="/rinchan.png" />
+
+  <!-- Preconnect untuk Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body class="bg-background">
+<body class="bg-background font-sans antialiased min-h-screen dark">
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
