@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { useEffect, useCallback } from "react";
+import { addRinchanLog } from "@/lib/logger";
 
 interface Device {
   id: string;
@@ -127,9 +128,11 @@ export function DeviceSidebar({
         setDeviceName("");
         setDeviceId("");
         fetchDevices();
+        addRinchanLog("Berhasil Menambah Perangkat", `Perangkat ${deviceName} berhasil ditambahkan ke akun Anda.`, "success");
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Gagal mengklaim perangkat");
+      addRinchanLog("Gagal Menambah Perangkat", err.response?.data?.message || "Gagal mengklaim perangkat", "warning");
     } finally {
       setIsClaiming(false);
     }
@@ -152,9 +155,11 @@ export function DeviceSidebar({
       if (res.data.success) {
         setDetailOpen(false);
         fetchDevices();
+        addRinchanLog("Berhasil Memperbarui Perangkat", `Nama perangkat berhasil diubah menjadi ${editDeviceName}.`, "success");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Gagal update device", err);
+      addRinchanLog("Gagal Memperbarui Perangkat", err.response?.data?.message || "Terjadi kesalahan saat memperbarui perangkat", "warning");
     } finally {
       setIsUpdating(false);
     }
@@ -169,9 +174,11 @@ export function DeviceSidebar({
         fetchDevices();
         setDeviceToDetail(prev => prev ? { ...prev, tokenVersion: res.data.data.version } : null);
         setRenewConfirmOpen(false);
+        addRinchanLog("Token Perangkat Diperbarui", `Token untuk perangkat ${deviceToDetail.name} berhasil di-renew ke v${res.data.data.version}.`, "success");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Gagal renew token", err);
+      addRinchanLog("Gagal Memperbarui Token", err.response?.data?.message || "Terjadi kesalahan saat memperbarui token", "warning");
     } finally {
       setIsUpdating(false);
     }
@@ -192,9 +199,11 @@ export function DeviceSidebar({
         }
         
         fetchDevices();
+        addRinchanLog("Perangkat Dihapus", `Perangkat ${deviceToDetail.name} dan seluruh riwayatnya telah dihapus permanen.`, "warning");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Gagal menghapus perangkat", err);
+      addRinchanLog("Gagal Menghapus Perangkat", err.response?.data?.message || "Terjadi kesalahan saat menghapus perangkat", "warning");
     } finally {
       setIsDeleting(false);
     }

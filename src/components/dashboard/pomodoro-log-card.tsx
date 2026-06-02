@@ -174,8 +174,8 @@ function SessionLogView({
 
   // Gabungkan dan urutkan data secara kronologis
   const getFilteredItems = () => {
-    const logs = data.logs.map((l) => ({ type: "log" as const, data: l, date: new Date(l.createdAt).getTime() }));
-    const sensors = data.sensorEvents.map((s) => ({ type: "sensor" as const, data: s, date: new Date(s.createdAt).getTime() }));
+    const logs = data.logs.map((l) => ({ type: "log" as const, data: l, date: l.createdAt ? new Date(l.createdAt).getTime() : 0 }));
+    const sensors = data.sensorEvents.map((s) => ({ type: "sensor" as const, data: s, date: s.createdAt ? new Date(s.createdAt).getTime() : 0 }));
 
     let combined = [...logs, ...sensors];
 
@@ -284,7 +284,7 @@ function SessionLogView({
                   <div className="bg-primary/5 rounded-lg p-2.5 border border-primary/10">
                     <p className="text-xs leading-relaxed">{event.aiResponse}</p>
                   </div>
-                  <div className="flex items-center gap-3 pt-1">
+                  <div className="flex items-center gap-3 pt-2 flex-wrap">
                     <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                       <Thermometer className="w-3 h-3" />
                       <span>{event.temperatureAtTime}°C</span>
@@ -296,6 +296,11 @@ function SessionLogView({
                     <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                       <Volume2 className="w-3 h-3" />
                       <span>{event.noiseAtTime} dB</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground">
+                        {event.emotion}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -378,13 +383,13 @@ interface PomodoroLogCardProps {
 export function PomodoroLogCard({ currentSessionId }: PomodoroLogCardProps) {
   const [activeView, setActiveView] = useState<"current" | "history">("current");
   const [selectedSession, setSelectedSession] = useState<PomodoroSession | null>(null);
-  
+
   const [sessions, setSessions] = useState<PomodoroSession[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
-  
+
   const [currentSessionLogs, setCurrentSessionLogs] = useState<SessionLogData>({ logs: [], sensorEvents: [] });
   const [historySessionLogs, setHistorySessionLogs] = useState<SessionLogData | null>(null);
-  
+
   const [isRefreshingCurrent, setIsRefreshingCurrent] = useState(false);
   const [isLoadingHistoryLogs, setIsLoadingHistoryLogs] = useState(false);
 

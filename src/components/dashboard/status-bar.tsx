@@ -18,9 +18,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { SettingsSheet } from "./settings-sheet";
 import { ProfilePanel } from "./profile-panel";
+import { useToast } from "@/hooks/use-toast";
+
+export interface LogItemData {
+  title: string;
+  description: string;
+  type: "warning" | "success";
+  timestamp: number;
+}
 
 interface UserProfile {
   id: string;
@@ -57,10 +64,53 @@ export function StatusBar({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [logs, setLogs] = useState<LogItemData[]>([]);
+  const [unread, setUnread] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Load push notification settings
+    const savedPushNotif = localStorage.getItem("rinchan_push_notifications");
+    if (savedPushNotif !== null) setNotifications(savedPushNotif === "true");
+
+    // Load logs from session storage
+    const savedLogs = sessionStorage.getItem("rinchan_logs");
+    if (savedLogs) {
+      try {
+        setLogs(JSON.parse(savedLogs));
+      } catch (e) {}
+    }
+
+    // Listen to log events
+    const handleLog = (e: any) => {
+      const data = e.detail;
+      setLogs((prev) => {
+        const newLogs = [data, ...prev].slice(0, 50); // keep last 50 logs
+        sessionStorage.setItem("rinchan_logs", JSON.stringify(newLogs));
+        return newLogs;
+      });
+      setUnread(true);
+
+      // Show toast if push notifications are enabled
+      const savedPushNotif = localStorage.getItem("rinchan_push_notifications");
+      const isPushEnabled = savedPushNotif !== null ? savedPushNotif === "true" : true;
+      if (isPushEnabled) {
+        toast({
+          title: data.title,
+          description: data.description,
+          variant: data.type === "warning" ? "destructive" : "default",
+          className: data.type === "success" 
+            ? "bg-emerald-500 text-white border-none" 
+            : undefined,
+        });
+      }
+    };
+
+    window.addEventListener("rinchan_log", handleLog);
+    return () => window.removeEventListener("rinchan_log", handleLog);
+  }, [toast]);
 
   return (
     <>
@@ -123,7 +173,9 @@ export function StatusBar({
 
 
           {/* Notifications */}
-          <Popover>
+          <Popover onOpenChange={(open) => {
+            if (open) setUnread(false);
+          }}>
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
@@ -131,7 +183,7 @@ export function StatusBar({
                 className="relative h-8 w-8 rounded-lg hover:bg-secondary/50"
               >
                 <Bell className="w-4 h-4 text-muted-foreground" />
-                {notifications && (
+                {unread && (
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
                 )}
               </Button>
@@ -142,35 +194,25 @@ export function StatusBar({
               sideOffset={8}
               collisionPadding={16}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium">Notifications</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Alerts</span>
-                  <Switch
-                    checked={notifications}
-                    onCheckedChange={setNotifications}
-                  />
-                </div>
+              <div className="flex items-center justify-between mb-4 border-b border-border/30 pb-3">
+                <h3 className="font-medium">Notifikasi Riwayat</h3>
               </div>
-              <div className="space-y-3">
-                <NotificationItem
-                  title="Temperature Alert"
-                  description="Room temperature is above optimal range"
-                  time="2m ago"
-                  type="warning"
-                />
-                <NotificationItem
-                  title="Focus Session Complete"
-                  description="Great work! You completed a 25-minute session"
-                  time="15m ago"
-                  type="success"
-                />
-                <NotificationItem
-                  title="Device Connected"
-                  description="Rinchan is now online and synced"
-                  time="1h ago"
-                  type="info"
-                />
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                {logs.length > 0 ? (
+                  logs.map((log, i) => (
+                    <NotificationItem
+                      key={i}
+                      title={log.title}
+                      description={log.description}
+                      time={formatTimeAgo(log.timestamp)}
+                      type={log.type}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-sm text-muted-foreground">
+                    Belum ada notifikasi
+                  </div>
+                )}
               </div>
             </PopoverContent>
           </Popover>
@@ -230,12 +272,11 @@ function NotificationItem({
   title: string;
   description: string;
   time: string;
-  type: "warning" | "success" | "info";
+  type: "warning" | "success";
 }) {
   const colors = {
     warning: "bg-warning/20 border-warning/30",
     success: "bg-success/20 border-success/30",
-    info: "bg-primary/20 border-primary/30",
   };
 
   return (
@@ -253,4 +294,13 @@ function NotificationItem({
       </div>
     </div>
   );
+}
+
+function formatTimeAgo(timestamp: number) {
+  const diffInMinutes = Math.floor((Date.now() - timestamp) / 60000);
+  if (diffInMinutes < 1) return "Baru saja";
+  if (diffInMinutes < 60) return `${diffInMinutes}m lalu`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}j lalu`;
+  return `${Math.floor(diffInHours / 24)}h lalu`;
 }

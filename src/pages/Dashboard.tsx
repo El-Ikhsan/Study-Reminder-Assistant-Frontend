@@ -11,6 +11,7 @@ import { useTelemetry } from "@/hooks/use-telemetry";
 import { usePomodoro } from "@/hooks/use-pomodoro";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import { addRinchanLog } from "@/lib/logger";
 
 import { api } from "@/lib/api";
 
@@ -119,9 +120,11 @@ export default function DashboardPage() {
               const res = await api.patch("/user/me", profile);
               if (res.data.success) {
                 updateUser(res.data.data.user);
+                addRinchanLog("Profil Diperbarui", "Data profil Anda berhasil diperbarui.", "success");
               }
-            } catch (err) {
+            } catch (err: any) {
               console.error("Gagal update profil", err);
+              addRinchanLog("Gagal Memperbarui Profil", err.response?.data?.message || "Terjadi kesalahan saat memperbarui profil.", "warning");
             }
           }}
           onAvatarUpload={async (file) => {
@@ -135,9 +138,11 @@ export default function DashboardPage() {
               });
               if (res.data.success) {
                 updateUser({ avatarUrl: res.data.data.avatarUrl });
+                addRinchanLog("Avatar Diperbarui", "Foto profil Anda berhasil diunggah.", "success");
               }
-            } catch (err) {
+            } catch (err: any) {
               console.error("Gagal upload avatar", err);
+              addRinchanLog("Gagal Mengunggah Avatar", err.response?.data?.message || "Terjadi kesalahan saat mengunggah foto profil.", "warning");
             }
           }}
           onAvatarRemove={async () => {
@@ -145,9 +150,11 @@ export default function DashboardPage() {
               const res = await api.delete("/user/me/avatar");
               if (res.data.success) {
                 updateUser({ avatarUrl: null });
+                addRinchanLog("Avatar Dihapus", "Foto profil Anda berhasil dihapus.", "success");
               }
-            } catch (err) {
+            } catch (err: any) {
               console.error("Gagal hapus avatar", err);
+              addRinchanLog("Gagal Menghapus Avatar", err.response?.data?.message || "Terjadi kesalahan saat menghapus foto profil.", "warning");
             }
           }}
           onLogout={logout}

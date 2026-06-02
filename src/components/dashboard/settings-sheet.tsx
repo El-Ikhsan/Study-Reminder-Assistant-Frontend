@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Wifi, Bell, Palette, Save } from "lucide-react";
+import { Bell, Palette, Save } from "lucide-react";
 
 interface SettingsSheetProps {
   open: boolean;
@@ -29,64 +29,47 @@ interface SettingsSheetProps {
 }
 
 export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
-  const [autoConnect, setAutoConnect] = useState(true);
-  const [notifications, setNotifications] = useState(true);
+  const [notifications, setNotifications] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("rinchan_push_notifications");
+      return saved !== null ? saved === "true" : true;
+    }
+    return true;
+  });
   const { theme, setTheme } = useTheme();
+
+  const handleSave = () => {
+    localStorage.setItem("rinchan_push_notifications", String(notifications));
+    onOpenChange(false);
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="glass-panel border-l-glass-border w-[85vw] sm:w-[540px] overflow-y-auto p-6 sm:p-8">
         <SheetHeader className="space-y-1 p-0">
-          <SheetTitle className="text-xl">Settings</SheetTitle>
+          <SheetTitle className="text-xl">Pengaturan</SheetTitle>
           <SheetDescription>
-            Configure your Rinchan dashboard preferences
+            Atur preferensi dashboard Rinchan Anda
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-8 flex flex-col gap-6">
-          {/* Connection Settings */}
-          <section className="flex flex-col gap-4 border-b border-border/30 pb-6">
-            <div className="flex items-center gap-3 text-sm font-medium text-foreground/90">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Wifi className="w-4 h-4 text-primary" />
-              </div>
-              <span>Connection</span>
-            </div>
-            <div className="pl-11">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="auto-connect" className="text-sm font-medium">
-                    Auto-connect on startup
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Automatically connect to Rinchan device
-                  </p>
-                </div>
-                <Switch
-                  id="auto-connect"
-                  checked={autoConnect}
-                  onCheckedChange={setAutoConnect}
-                />
-              </div>
-            </div>
-          </section>
-
           {/* Notifications */}
           <section className="flex flex-col gap-4 border-b border-border/30 pb-6">
             <div className="flex items-center gap-3 text-sm font-medium text-foreground/90">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Bell className="w-4 h-4 text-primary" />
               </div>
-              <span>Notifications</span>
+              <span>Notifikasi</span>
             </div>
             <div className="pl-11">
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="notifications" className="text-sm font-medium">
-                    Push notifications
+                    Push Notifikasi
                   </Label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Receive alerts for sensor anomalies
+                    Terima peringatan push notifikasi secara umum
                   </p>
                 </div>
                 <Switch
@@ -104,19 +87,19 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Palette className="w-4 h-4 text-primary" />
               </div>
-              <span>Appearance</span>
+              <span>Tampilan</span>
             </div>
             <div className="pl-11">
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Theme</Label>
+                <Label className="text-sm font-medium">Tema</Label>
                 <Select value={theme} onValueChange={setTheme}>
                   <SelectTrigger className="bg-secondary/50 border-border/50 h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="glass-panel border-glass-border">
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
+                    <SelectItem value="dark">Gelap</SelectItem>
+                    <SelectItem value="light">Terang</SelectItem>
+                    <SelectItem value="system">Sistem</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -124,9 +107,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
           </section>
 
           <div className="pt-4">
-            <Button className="w-full gap-2" onClick={() => onOpenChange(false)}>
+            <Button className="w-full gap-2" onClick={handleSave}>
               <Save className="w-4 h-4" />
-              Save Changes
+              Simpan Perubahan
             </Button>
           </div>
         </div>
