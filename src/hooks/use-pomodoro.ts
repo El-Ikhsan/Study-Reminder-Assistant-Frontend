@@ -35,7 +35,20 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
 };
 
 export function usePomodoro(deviceId: string): UsePomodoroReturn {
-  const [settings, setSettings] = useState<PomodoroSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<PomodoroSettings>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("rinchan_pomodoro_settings");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error("Gagal membaca pomodoro settings", e);
+        }
+      }
+    }
+    return DEFAULT_SETTINGS;
+  });
+
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(settings.focusDuration * 60);
@@ -116,6 +129,9 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
   const updateSettings = useCallback((newSettings: Partial<PomodoroSettings>) => {
     setSettings((prev) => {
       const updated = { ...prev, ...newSettings };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("rinchan_pomodoro_settings", JSON.stringify(updated));
+      }
       // Reset timer when settings change
       if (newSettings.focusDuration !== undefined || newSettings.breakDuration !== undefined) {
         clearTimer();
@@ -137,6 +153,11 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
           if (prev <= 1) {
             // Session complete
             if (sessionType === "focus") {
+              // Switch to break
+              setSessionType("break");
+              return settings.breakDuration * 60;
+            } else {
+              // Break finished, move to next focus cycle
               setSessionsCompleted((s) => s + 1);
               
               // Check if all cycles are done
@@ -147,11 +168,6 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
                 return 0;
               }
               
-              // Switch to break
-              setSessionType("break");
-              return settings.breakDuration * 60;
-            } else {
-              // Break finished, move to next focus cycle
               setCurrentCycle((c) => c + 1);
               setSessionType("focus");
               return settings.focusDuration * 60;
