@@ -20,6 +20,7 @@ interface UseTelemetryReturn {
   currentData: TelemetryData;
   chartData: ChartDataPoint[];
   isConnected: boolean;
+  isDataActive: boolean;
   connect: () => void;
   disconnect: () => void;
 }
@@ -38,6 +39,7 @@ function formatTime(date: Date): string {
 
 export function useTelemetry(deviceId: string): UseTelemetryReturn {
   const [isConnected, setIsConnected] = useState(false);
+  const [isDataActive, setIsDataActive] = useState(false);
   const [currentData, setCurrentData] = useState<TelemetryData>({
     temperature: 0,
     brightness: 0,
@@ -46,6 +48,7 @@ export function useTelemetry(deviceId: string): UseTelemetryReturn {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTelemetryTimeRef = useRef<number>(0);
 
   const connect = useCallback(() => {
     if (!deviceId) return;
@@ -82,6 +85,8 @@ export function useTelemetry(deviceId: string): UseTelemetryReturn {
           };
 
           setCurrentData(newData);
+          setIsDataActive(true);
+          lastTelemetryTimeRef.current = Date.now();
           
           setChartData((prevChart) => {
             const newPoint: ChartDataPoint = {
@@ -100,6 +105,7 @@ export function useTelemetry(deviceId: string): UseTelemetryReturn {
     ws.onclose = () => {
       console.log("WebSocket Disconnected");
       setIsConnected(false);
+      setIsDataActive(false);
       // Reconnect after 5 seconds
       reconnectTimeoutRef.current = setTimeout(connect, 5000);
     };
@@ -120,6 +126,8 @@ export function useTelemetry(deviceId: string): UseTelemetryReturn {
       reconnectTimeoutRef.current = null;
     }
     setIsConnected(false);
+    setIsDataActive(false);
+    lastTelemetryTimeRef.current = 0;
   }, []);
 
   // Initialize chart data with 30 empty points if none exist
@@ -152,10 +160,22 @@ export function useTelemetry(deviceId: string): UseTelemetryReturn {
     return () => clearInterval(pingInterval);
   }, []);
 
+  // Monitor timeout telemetry (60 detik)
+  useEffect(() => {
+    const timeoutCheck = setInterval(() => {
+      if (lastTelemetryTimeRef.current > 0 && Date.now() - lastTelemetryTimeRef.current > 60000) {
+        setIsDataActive(false);
+      }
+    }, 5000);
+
+    return () => clearInterval(timeoutCheck);
+  }, []);
+
   return {
     currentData,
     chartData,
     isConnected,
+    isDataActive,
     connect,
     disconnect,
   };

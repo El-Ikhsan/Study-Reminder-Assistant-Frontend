@@ -12,6 +12,7 @@ import {
   Building,
   Trash2,
   LogOut,
+  KeyRound,
 } from "lucide-react";
 import {
   Sheet,
@@ -31,9 +32,6 @@ interface UserProfile {
   id: string;
   name: string;
   email: string;
-  username: string;
-  location: string;
-  organization: string;
   avatarUrl: string | null;
 }
 
@@ -57,16 +55,15 @@ export function ProfilePanel({
   onLogout,
 }: ProfilePanelProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Partial<UserProfile>>({});
+  const [formData, setFormData] = useState<Partial<UserProfile> & { oldPassword?: string; newPassword?: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleEdit = () => {
     setFormData({
       name: user.name,
       email: user.email,
-      username: user.username,
-      location: user.location,
-      organization: user.organization,
+      oldPassword: "",
+      newPassword: "",
     });
     setIsEditing(true);
   };
@@ -142,9 +139,6 @@ export function ProfilePanel({
           <div className="flex items-start justify-between">
             <div>
               <SheetTitle className="text-xl">{user.name}</SheetTitle>
-              <SheetDescription className="text-sm mt-0.5">
-                @{user.username}
-              </SheetDescription>
             </div>
             {!isEditing ? (
               <Button
@@ -198,32 +192,30 @@ export function ProfilePanel({
               onEditChange={(v) => setFormData((p) => ({ ...p, email: v }))}
               type="email"
             />
-            <ProfileField
-              icon={AtSign}
-              label="Username"
-              value={user.username}
-              isEditing={isEditing}
-              editValue={formData.username}
-              onEditChange={(v) => setFormData((p) => ({ ...p, username: v }))}
-            />
-            <ProfileField
-              icon={MapPin}
-              label="Lokasi"
-              value={user.location || "Belum diatur"}
-              isEditing={isEditing}
-              editValue={formData.location}
-              onEditChange={(v) => setFormData((p) => ({ ...p, location: v }))}
-              placeholder="Masukkan lokasi"
-            />
-            <ProfileField
-              icon={Building}
-              label="Organisasi"
-              value={user.organization || "Belum diatur"}
-              isEditing={isEditing}
-              editValue={formData.organization}
-              onEditChange={(v) => setFormData((p) => ({ ...p, organization: v }))}
-              placeholder="Masukkan organisasi"
-            />
+            {isEditing && (
+              <>
+                <ProfileField
+                  icon={KeyRound}
+                  label="Password Lama (opsional)"
+                  value="********"
+                  isEditing={isEditing}
+                  editValue={formData.oldPassword}
+                  onEditChange={(v) => setFormData((p) => ({ ...p, oldPassword: v }))}
+                  type="password"
+                  placeholder="Masukkan password lama"
+                />
+                <ProfileField
+                  icon={KeyRound}
+                  label="Password Baru (opsional)"
+                  value="********"
+                  isEditing={isEditing}
+                  editValue={formData.newPassword}
+                  onEditChange={(v) => setFormData((p) => ({ ...p, newPassword: v }))}
+                  type="password"
+                  placeholder="Masukkan password baru"
+                />
+              </>
+            )}
           </div>
 
           <Separator className="bg-border/30" />

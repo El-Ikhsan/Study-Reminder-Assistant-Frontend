@@ -68,7 +68,7 @@ export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const { currentData, chartData, isConnected } = useTelemetry(selectedDevice);
+  const { currentData, chartData, isConnected, isDataActive } = useTelemetry(selectedDevice);
   const {
     isRunning,
     timeLeft,
@@ -97,7 +97,7 @@ export default function DashboardPage() {
       <div className="fixed inset-0 -z-10 overflow-hidden bg-slate-50 dark:bg-[#0a0a0a]">
         {/* Base Unsplash Image */}
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000 scale-105"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: "url('https://images.unsplash.com/photo-1728721529009-bfaab6fcc8e6?q=80&w=1032&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
           }}
@@ -163,6 +163,7 @@ export default function DashboardPage() {
                 setSelectedDevice(device);
                 setIsMobileSidebarOpen(false);
               }}
+              isDataActive={isDataActive}
             />
           </SheetContent>
         </Sheet>
@@ -174,6 +175,7 @@ export default function DashboardPage() {
             <DeviceSidebar
               selectedDevice={selectedDevice}
               onSelectDevice={setSelectedDevice}
+              isDataActive={isDataActive}
             />
           </div>
 

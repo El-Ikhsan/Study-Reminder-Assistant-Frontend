@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import {
-  Wifi,
-  WifiOff,
+  Activity,
+  Unplug,
   Bell,
   Settings,
   Clock,
@@ -107,13 +107,13 @@ export function StatusBar({
           >
             {isConnected ? (
               <>
-                <Wifi className="w-3.5 h-3.5" />
+                <Activity className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Connected</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse-soft" />
               </>
             ) : (
               <>
-                <WifiOff className="w-3.5 h-3.5" />
+                <Unplug className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Disconnected</span>
               </>
             )}

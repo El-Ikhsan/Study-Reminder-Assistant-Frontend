@@ -141,20 +141,21 @@
   }
 }
 
-/* Premium glass panel styles (macOS style) */
+/* Premium glass panel styles (Optimized for performance) */
 .glass-panel {
-  @apply bg-glass-bg backdrop-blur-3xl backdrop-saturate-150 border border-glass-border rounded-2xl;
-  box-shadow: 
-    0 0 0 1px var(--glass-highlight) inset,
-    0 8px 32px -8px oklch(0 0 0 / 0.3),
-    0 2px 8px -2px oklch(0 0 0 / 0.15);
-}
-
-.glass-panel-subtle {
-  @apply bg-glass-bg/80 backdrop-blur-2xl backdrop-saturate-150 border border-glass-border/70 rounded-xl;
+  @apply bg-glass-bg backdrop-blur-xl backdrop-saturate-150 border border-glass-border rounded-2xl;
   box-shadow: 
     0 0 0 1px var(--glass-highlight) inset,
     0 4px 16px -4px oklch(0 0 0 / 0.2);
+  transform: translateZ(0); /* Hardware acceleration */
+}
+
+.glass-panel-subtle {
+  @apply bg-glass-bg/80 backdrop-blur-lg backdrop-saturate-150 border border-glass-border/70 rounded-xl;
+  box-shadow: 
+    0 0 0 1px var(--glass-highlight) inset,
+    0 2px 8px -2px oklch(0 0 0 / 0.1);
+  transform: translateZ(0);
 }
 
 /* Smooth animations */
