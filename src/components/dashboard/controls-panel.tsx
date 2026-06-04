@@ -9,15 +9,19 @@ import { useMediaQuery } from "@/hooks/use-mobile";
 interface ControlsPanelProps {
   screenBrightness: number;
   onScreenBrightnessChange: (value: number) => void;
+  onScreenBrightnessCommit: (value: number) => void;
   speakerVolume: number;
   onSpeakerVolumeChange: (value: number) => void;
+  onSpeakerVolumeCommit: (value: number) => void;
 }
 
 export function ControlsPanel({
   screenBrightness,
   onScreenBrightnessChange,
+  onScreenBrightnessCommit,
   speakerVolume,
   onSpeakerVolumeChange,
+  onSpeakerVolumeCommit,
 }: ControlsPanelProps) {
   // xl breakpoint is 1280px in Tailwind
   const isDesktop = useMediaQuery("(min-width: 1280px)");
@@ -38,6 +42,7 @@ export function ControlsPanel({
         label="Brightness"
         value={screenBrightness}
         onChange={onScreenBrightnessChange}
+        onCommit={onScreenBrightnessCommit}
         icon={<Monitor className="w-4 h-4" />}
         leftIcon={<Moon className="w-3 h-3" />}
         rightIcon={<Sun className="w-3 h-3" />}
@@ -51,6 +56,7 @@ export function ControlsPanel({
         label="Volume"
         value={speakerVolume}
         onChange={onSpeakerVolumeChange}
+        onCommit={onSpeakerVolumeCommit}
         icon={<Volume2 className="w-4 h-4" />}
         leftIcon={<Volume2 className="w-3 h-3 opacity-40" />}
         rightIcon={<Volume2 className="w-3 h-3" />}
@@ -67,6 +73,7 @@ interface ControlSliderProps {
   label: string;
   value: number;
   onChange: (value: number) => void;
+  onCommit: (value: number) => void;
   icon: React.ReactNode;
   leftIcon: React.ReactNode;
   rightIcon: React.ReactNode;
@@ -79,6 +86,7 @@ function ControlSlider({
   label,
   value,
   onChange,
+  onCommit,
   icon,
   leftIcon,
   rightIcon,
@@ -110,6 +118,7 @@ function ControlSlider({
             orientation="vertical"
             value={[value]}
             onValueChange={([v]) => onChange(v)}
+            onValueCommit={([v]) => onCommit(v)}
             max={100}
             step={1}
             className={cn(
@@ -174,6 +183,7 @@ function ControlSlider({
             orientation="horizontal"
             value={[value]}
             onValueChange={([v]) => onChange(v)}
+            onValueCommit={([v]) => onCommit(v)}
             max={100}
             step={1}
             className={cn(

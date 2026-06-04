@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { StatusBar } from "@/components/dashboard/status-bar";
-import { DeviceSidebar } from "@/components/dashboard/device-sidebar";
+import { DeviceSidebar, type Device } from "@/components/dashboard/device-sidebar";
 import { TelemetryCards } from "@/components/dashboard/telemetry-cards";
 import { TelemetryChart } from "@/components/dashboard/telemetry-chart";
 import { ControlsPanel } from "@/components/dashboard/controls-panel";
@@ -19,53 +19,12 @@ export default function DashboardPage() {
   const { user, updateUser, logout } = useAuth();
   
   const [selectedDevice, setSelectedDevice] = useState("");
+  const [currentDevice, setCurrentDevice] = useState<Device | null>(null);
   const [activeMetric, setActiveMetric] = useState<"temperature" | "brightness" | "noise">("temperature");
   const [screenBrightness, setScreenBrightness] = useState(70);
   const [speakerVolume, setSpeakerVolume] = useState(45);
   
-  const isInitialMount = useRef(true);
-  const isInitialVolumeMount = useRef(true);
-  
-  // Debounced API calls for settings
-  useEffect(() => {
-    if (!selectedDevice) return;
-    
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    const timeout = setTimeout(async () => {
-      try {
-        await api.post("/device/settings/brightness", {
-          deviceId: selectedDevice,
-          value: screenBrightness
-        });
-      } catch (err) {
-        console.error("Gagal update brightness", err);
-      }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [screenBrightness, selectedDevice]);
 
-  useEffect(() => {
-    if (!selectedDevice) return;
-
-    if (isInitialVolumeMount.current) {
-      isInitialVolumeMount.current = false;
-      return;
-    }
-    const timeout = setTimeout(async () => {
-      try {
-        await api.post("/device/settings/volume", {
-          deviceId: selectedDevice,
-          value: speakerVolume
-        });
-      } catch (err) {
-        console.error("Gagal update volume", err);
-      }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [speakerVolume, selectedDevice]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -166,8 +125,13 @@ export default function DashboardPage() {
           <SheetContent side="left" className="glass-panel border-r-glass-border p-0 w-[85vw] sm:w-[320px]">
             <DeviceSidebar
               selectedDevice={selectedDevice}
-              onSelectDevice={(device) => {
-                setSelectedDevice(device);
+              onSelectDevice={(id, device) => {
+                setSelectedDevice(id);
+                if (device) {
+                  setCurrentDevice(device);
+                  if (device.brightness !== undefined) setScreenBrightness(device.brightness);
+                  if (device.volume !== undefined) setSpeakerVolume(device.volume);
+                }
                 setIsMobileSidebarOpen(false);
               }}
               isDataActive={isDataActive}
@@ -181,7 +145,14 @@ export default function DashboardPage() {
           <div className="hidden lg:block glass-panel w-64 overflow-hidden">
             <DeviceSidebar
               selectedDevice={selectedDevice}
-              onSelectDevice={setSelectedDevice}
+              onSelectDevice={(id, device) => {
+                setSelectedDevice(id);
+                if (device) {
+                  setCurrentDevice(device);
+                  if (device.brightness !== undefined) setScreenBrightness(device.brightness);
+                  if (device.volume !== undefined) setSpeakerVolume(device.volume);
+                }
+              }}
               isDataActive={isDataActive}
             />
           </div>
@@ -233,8 +204,30 @@ export default function DashboardPage() {
                 <ControlsPanel
                   screenBrightness={screenBrightness}
                   onScreenBrightnessChange={setScreenBrightness}
+                  onScreenBrightnessCommit={async (val) => {
+                    if (!selectedDevice) return;
+                    try {
+                      const res = await api.post("/device/settings/brightness", { deviceId: selectedDevice, value: val });
+                      if (res.data.success) {
+                        addRinchanLog("Pengaturan Kecerahan", res.data.message || `Kecerahan diubah menjadi ${val}%`, "success");
+                      }
+                    } catch (err: any) {
+                      addRinchanLog("Gagal Mengubah Kecerahan", err.response?.data?.message || "Terjadi kesalahan", "warning");
+                    }
+                  }}
                   speakerVolume={speakerVolume}
                   onSpeakerVolumeChange={setSpeakerVolume}
+                  onSpeakerVolumeCommit={async (val) => {
+                    if (!selectedDevice) return;
+                    try {
+                      const res = await api.post("/device/settings/volume", { deviceId: selectedDevice, value: val });
+                      if (res.data.success) {
+                        addRinchanLog("Pengaturan Volume", res.data.message || `Volume diubah menjadi ${val}%`, "success");
+                      }
+                    } catch (err: any) {
+                      addRinchanLog("Gagal Mengubah Volume", err.response?.data?.message || "Terjadi kesalahan", "warning");
+                    }
+                  }}
                 />
               </div>
             </div>

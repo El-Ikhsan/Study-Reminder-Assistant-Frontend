@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
+import { addRinchanLog } from "@/lib/logger";
 
 type SessionType = "focus" | "break";
 type LearningMedia = "book" | "laptop" | "phone" | "computer";
@@ -87,34 +88,48 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
         });
         if (res.data.success && res.data.sessionId) {
           setSessionId(res.data.sessionId);
+          
+          // ✨ Sinkronisasi Waktu Akurat:
+          // Gunakan waktu mulai eksak dari server (setelah ESP32 mengirim ACK)
+          if (res.data.startedAt) {
+            const exactStartTime = new Date(res.data.startedAt).getTime();
+            const elapsedSeconds = Math.floor((Date.now() - exactStartTime) / 1000);
+            const totalSeconds = sessionType === "focus" ? settings.focusDuration * 60 : settings.breakDuration * 60;
+            const newTimeLeft = Math.max(0, totalSeconds - elapsedSeconds);
+            setTimeLeft(newTimeLeft);
+          }
+          
+          // Mulai timer UI HANYA JIKA API berhasil (device online & merespons)
+          setIsRunning(true);
+          addRinchanLog("Sesi Pomodoro Dimulai", "Selamat fokus! Timer telah disinkronisasi dengan perangkat.", "success");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Gagal memulai pomodoro", err);
-        // Fallback to local if API fails or device offline?
+        addRinchanLog("Gagal Memulai Sesi", err.response?.data?.message || "Gagal menghubungi perangkat.", "warning");
       }
     } else {
-      // Pause or stop? API doc says POST /api/pomodoro/stop for cancel.
-      // Usually toggle means pause, but the API doc only has start and stop.
-      // If we are stopping it:
       if (sessionId) {
         try {
           await api.post("/pomodoro/stop", { sessionId, deviceId });
-        } catch (err) {
+          addRinchanLog("Sesi Dibatalkan", "Sesi Pomodoro berhasil dihentikan.", "warning");
+        } catch (err: any) {
           console.error("Gagal menghentikan pomodoro", err);
+          addRinchanLog("Gagal Menghentikan Sesi", err.response?.data?.message || "Terjadi kesalahan sistem.", "warning");
         }
         setSessionId(null);
       }
+      setIsRunning(false);
     }
-    
-    setIsRunning((prev) => !prev);
   }, [isComplete, isRunning, deviceId, settings, currentCycle, sessionType, sessionId]);
 
   const reset = useCallback(async () => {
     if (sessionId) {
       try {
         await api.post("/pomodoro/stop", { sessionId, deviceId });
-      } catch (err) {
+        addRinchanLog("Sesi Direset", "Sesi saat ini dibatalkan dan dikembalikan ke awal.", "warning");
+      } catch (err: any) {
         console.error("Gagal reset pomodoro", err);
+        addRinchanLog("Gagal Reset Sesi", err.response?.data?.message || "Terjadi kesalahan.", "warning");
       }
       setSessionId(null);
     }

@@ -275,7 +275,7 @@ function NotificationItem({
   type: "warning" | "success";
 }) {
   const colors = {
-    warning: "bg-warning/20 border-warning/30",
+    warning: "bg-destructive/20 border-destructive/30",
     success: "bg-success/20 border-success/30",
   };
 

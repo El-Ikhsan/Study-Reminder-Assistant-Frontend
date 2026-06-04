@@ -33,7 +33,7 @@ import { api } from "@/lib/api";
 import { useEffect, useCallback } from "react";
 import { addRinchanLog } from "@/lib/logger";
 
-interface Device {
+export interface Device {
   id: string;
   name: string;
   type: "main" | "sensor" | "controller";
@@ -41,11 +41,13 @@ interface Device {
   icon?: React.ReactNode;
   deviceIotId?: string;
   tokenVersion?: number;
+  brightness?: number;
+  volume?: number;
 }
 
 interface DeviceSidebarProps {
   selectedDevice: string;
-  onSelectDevice: (id: string) => void;
+  onSelectDevice: (id: string, device?: Device) => void;
   isDataActive?: boolean;
 }
 
@@ -87,6 +89,8 @@ export function DeviceSidebar({
           icon: <Cpu className="w-4 h-4" />,
           deviceIotId: d.deviceIotId,
           tokenVersion: d.tokenVersion,
+          brightness: d.brightness,
+          volume: d.volume,
         }));
         setDevices(mapped);
       }
@@ -104,7 +108,7 @@ export function DeviceSidebar({
   // Handle initial selection once devices are loaded
   useEffect(() => {
     if (devices.length > 0 && !selectedDevice) {
-      onSelectDevice(devices[0].id);
+      onSelectDevice(devices[0].id, devices[0]);
     }
   }, [devices, selectedDevice, onSelectDevice]);
 
@@ -246,7 +250,7 @@ export function DeviceSidebar({
                   ? "bg-primary/10 text-primary hover:bg-primary/15"
                   : "hover:bg-secondary/50 text-foreground/80"
               )}
-              onClick={() => onSelectDevice(device.id)}
+              onClick={() => onSelectDevice(device.id, device)}
             >
               <div
                 className={cn(
