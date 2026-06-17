@@ -70,7 +70,7 @@ export function StatusBar({
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Load push notification settings
     const savedPushNotif = localStorage.getItem("rinchan_push_notifications");
     if (savedPushNotif !== null) setNotifications(savedPushNotif === "true");
@@ -80,7 +80,7 @@ export function StatusBar({
     if (savedLogs) {
       try {
         setLogs(JSON.parse(savedLogs));
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Listen to log events
@@ -101,8 +101,8 @@ export function StatusBar({
           title: data.title,
           description: data.description,
           variant: data.type === "warning" ? "destructive" : "default",
-          className: data.type === "success" 
-            ? "bg-emerald-500 text-white border-none" 
+          className: data.type === "success"
+            ? "bg-emerald-500 text-white border-none"
             : undefined,
         });
       }
@@ -127,10 +127,10 @@ export function StatusBar({
           </Button>
 
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-              <span className="text-primary font-semibold text-sm">R</span>
+            <div className="w-10 h-8  justify-center shrink-0">
+              <img src="/onigiri-logo.png" alt="" className="w-full h-full object-cover" />
             </div>
-            <span className="font-medium text-foreground/90 hidden sm:inline">Rinchan</span>
+            <span className="font-medium text-foreground/90 hidden sm:inline">Smart Companion</span>
           </div>
           <Separator orientation="vertical" className="h-5 bg-border/50 hidden sm:block" />
           <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
