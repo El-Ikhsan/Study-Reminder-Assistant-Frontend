@@ -7,6 +7,21 @@ import { addRinchanLog } from "@/lib/logger";
 type SessionType = "focus" | "break";
 type LearningMedia = "book" | "laptop" | "phone" | "computer";
 
+// Mapping antara format frontend (lowercase) dan backend (format DB)
+const MEDIA_TO_DB: Record<LearningMedia, string> = {
+  book: "Buku",
+  laptop: "Laptop",
+  phone: "HP",
+  computer: "Komputer",
+};
+
+const MEDIA_FROM_DB: Record<string, LearningMedia> = {
+  Buku: "book",
+  Laptop: "laptop",
+  HP: "phone",
+  Komputer: "computer",
+};
+
 interface PomodoroSettings {
   focusDuration: number; // in minutes
   breakDuration: number; // in minutes
@@ -23,6 +38,7 @@ interface UsePomodoroReturn {
   settings: PomodoroSettings;
   isComplete: boolean;
   sessionId: string | null;
+  isLoadingPrefs: boolean;
   toggle: () => void;
   reset: () => void;
   updateSettings: (newSettings: Partial<PomodoroSettings>) => void;
@@ -36,28 +52,44 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
 };
 
 export function usePomodoro(deviceId: string): UsePomodoroReturn {
-  const [settings, setSettings] = useState<PomodoroSettings>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("rinchan_pomodoro_settings");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error("Gagal membaca pomodoro settings", e);
-        }
-      }
-    }
-    return DEFAULT_SETTINGS;
-  });
+  const [settings, setSettings] = useState<PomodoroSettings>(DEFAULT_SETTINGS);
+  const [isLoadingPrefs, setIsLoadingPrefs] = useState(true);
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(settings.focusDuration * 60);
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_SETTINGS.focusDuration * 60);
   const [sessionType, setSessionType] = useState<SessionType>("focus");
   const [currentCycle, setCurrentCycle] = useState(1);
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load preferensi dari database saat pertama kali mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const res = await api.get("/preferences/pomodoro");
+        if (res.data.success) {
+          const prefs = res.data.data.preferences;
+          const loaded: PomodoroSettings = {
+            focusDuration: prefs.focusDuration,
+            breakDuration: prefs.breakDuration,
+            totalCycles: prefs.totalCycles,
+            learningMedia: MEDIA_FROM_DB[prefs.learningMedia] ?? "laptop",
+          };
+          setSettings(loaded);
+          setTimeLeft(loaded.focusDuration * 60);
+        }
+      } catch (err) {
+        console.warn("Gagal memuat preferensi pomodoro dari server, menggunakan default.", err);
+        // Fallback ke default — tidak perlu pesan error ke user karena tidak kritis
+      } finally {
+        setIsLoadingPrefs(false);
+      }
+    };
+
+    loadPreferences();
+  }, []);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
@@ -68,44 +100,55 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
 
   const toggle = useCallback(async () => {
     if (isComplete) return;
-    
+
     if (!isRunning) {
       // Start session via API
       try {
-        const mediaFormatted = settings.learningMedia.charAt(0).toUpperCase() + settings.learningMedia.slice(1);
+        const mediaDb = MEDIA_TO_DB[settings.learningMedia];
         const res = await api.post("/pomodoro/start", {
           deviceId,
           recipe: {
             focusDuration: settings.focusDuration,
             breakDuration: settings.breakDuration,
             cycles: settings.totalCycles,
-            media: mediaFormatted === "Phone" ? "HP" : mediaFormatted === "Computer" ? "Komputer" : mediaFormatted === "Book" ? "Buku" : "Laptop",
+            media: mediaDb,
             currentCycle: currentCycle,
             currentMode: sessionType === "focus" ? "fokus" : "istirahat",
             currentPhase: "awal",
-            status: "running"
-          }
+            status: "running",
+          },
         });
         if (res.data.success && res.data.sessionId) {
           setSessionId(res.data.sessionId);
-          
+
           // ✨ Sinkronisasi Waktu Akurat:
           // Gunakan waktu mulai eksak dari server (setelah ESP32 mengirim ACK)
           if (res.data.startedAt) {
             const exactStartTime = new Date(res.data.startedAt).getTime();
             const elapsedSeconds = Math.floor((Date.now() - exactStartTime) / 1000);
-            const totalSeconds = sessionType === "focus" ? settings.focusDuration * 60 : settings.breakDuration * 60;
+            const totalSeconds =
+              sessionType === "focus"
+                ? settings.focusDuration * 60
+                : settings.breakDuration * 60;
             const newTimeLeft = Math.max(0, totalSeconds - elapsedSeconds);
             setTimeLeft(newTimeLeft);
           }
-          
+
           // Mulai timer UI HANYA JIKA API berhasil (device online & merespons)
           setIsRunning(true);
-          addRinchanLog("Sesi Pomodoro Dimulai", "Selamat fokus! Timer telah disinkronisasi dengan perangkat.", "success");
+          addRinchanLog(
+            "Sesi Pomodoro Dimulai",
+            "Selamat fokus! Timer telah disinkronisasi dengan perangkat.",
+            "success"
+          );
         }
       } catch (err: any) {
         console.error("Gagal memulai pomodoro", err);
-        addRinchanLog("Gagal Memulai Sesi", err.response?.data?.message || "Gagal menghubungi perangkat.", "warning");
+        addRinchanLog(
+          "Gagal Memulai Sesi",
+          err.response?.data?.message || "Gagal menghubungi perangkat.",
+          "warning"
+        );
       }
     } else {
       if (sessionId) {
@@ -114,7 +157,11 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
           addRinchanLog("Sesi Dibatalkan", "Sesi Pomodoro berhasil dihentikan.", "warning");
         } catch (err: any) {
           console.error("Gagal menghentikan pomodoro", err);
-          addRinchanLog("Gagal Menghentikan Sesi", err.response?.data?.message || "Terjadi kesalahan sistem.", "warning");
+          addRinchanLog(
+            "Gagal Menghentikan Sesi",
+            err.response?.data?.message || "Terjadi kesalahan sistem.",
+            "warning"
+          );
         }
         setSessionId(null);
       }
@@ -126,10 +173,18 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
     if (sessionId) {
       try {
         await api.post("/pomodoro/stop", { sessionId, deviceId });
-        addRinchanLog("Sesi Direset", "Sesi saat ini dibatalkan dan dikembalikan ke awal.", "warning");
+        addRinchanLog(
+          "Sesi Direset",
+          "Sesi saat ini dibatalkan dan dikembalikan ke awal.",
+          "warning"
+        );
       } catch (err: any) {
         console.error("Gagal reset pomodoro", err);
-        addRinchanLog("Gagal Reset Sesi", err.response?.data?.message || "Terjadi kesalahan.", "warning");
+        addRinchanLog(
+          "Gagal Reset Sesi",
+          err.response?.data?.message || "Terjadi kesalahan.",
+          "warning"
+        );
       }
       setSessionId(null);
     }
@@ -141,24 +196,44 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
     setIsComplete(false);
   }, [settings.focusDuration, clearTimer, sessionId, deviceId]);
 
-  const updateSettings = useCallback((newSettings: Partial<PomodoroSettings>) => {
-    setSettings((prev) => {
-      const updated = { ...prev, ...newSettings };
-      if (typeof window !== "undefined") {
-        localStorage.setItem("rinchan_pomodoro_settings", JSON.stringify(updated));
+  const updateSettings = useCallback(
+    async (newSettings: Partial<PomodoroSettings>) => {
+      setSettings((prev) => {
+        const updated = { ...prev, ...newSettings };
+
+        // Reset timer ketika durasi berubah
+        if (
+          newSettings.focusDuration !== undefined ||
+          newSettings.breakDuration !== undefined
+        ) {
+          clearTimer();
+          setIsRunning(false);
+          setSessionType("focus");
+          setCurrentCycle(1);
+          setTimeLeft(updated.focusDuration * 60);
+          setIsComplete(false);
+        }
+
+        return updated;
+      });
+
+      // Simpan ke database (fire-and-forget — tidak block UI)
+      try {
+        const payload: Record<string, unknown> = {};
+        if (newSettings.focusDuration !== undefined) payload.focusDuration = newSettings.focusDuration;
+        if (newSettings.breakDuration !== undefined) payload.breakDuration = newSettings.breakDuration;
+        if (newSettings.totalCycles !== undefined) payload.totalCycles = newSettings.totalCycles;
+        if (newSettings.learningMedia !== undefined) payload.learningMedia = MEDIA_TO_DB[newSettings.learningMedia];
+
+        if (Object.keys(payload).length > 0) {
+          await api.patch("/preferences/pomodoro", payload);
+        }
+      } catch (err) {
+        console.warn("Gagal menyimpan preferensi ke server:", err);
       }
-      // Reset timer when settings change
-      if (newSettings.focusDuration !== undefined || newSettings.breakDuration !== undefined) {
-        clearTimer();
-        setIsRunning(false);
-        setSessionType("focus");
-        setCurrentCycle(1);
-        setTimeLeft(updated.focusDuration * 60);
-        setIsComplete(false);
-      }
-      return updated;
-    });
-  }, [clearTimer]);
+    },
+    [clearTimer]
+  );
 
   // Timer logic with auto-switch between focus and break
   useEffect(() => {
@@ -174,7 +249,7 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
             } else {
               // Break finished, move to next focus cycle
               setSessionsCompleted((s) => s + 1);
-              
+
               // Check if all cycles are done
               if (currentCycle >= settings.totalCycles) {
                 clearTimer();
@@ -182,7 +257,7 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
                 setIsComplete(true);
                 return 0;
               }
-              
+
               setCurrentCycle((c) => c + 1);
               setSessionType("focus");
               return settings.focusDuration * 60;
@@ -207,6 +282,7 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
     settings,
     isComplete,
     sessionId,
+    isLoadingPrefs,
     toggle,
     reset,
     updateSettings,

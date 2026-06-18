@@ -4,7 +4,6 @@ import { StatusBar } from "@/components/dashboard/status-bar";
 import { DeviceSidebar, type Device } from "@/components/dashboard/device-sidebar";
 import { TelemetryCards } from "@/components/dashboard/telemetry-cards";
 import { TelemetryChart } from "@/components/dashboard/telemetry-chart";
-import { ControlsPanel } from "@/components/dashboard/controls-panel";
 import { PomodoroTimer } from "@/components/dashboard/pomodoro-timer";
 import { PomodoroLogCard } from "@/components/dashboard/pomodoro-log-card";
 import { useTelemetry } from "@/hooks/use-telemetry";
@@ -135,6 +134,32 @@ export default function DashboardPage() {
                 setIsMobileSidebarOpen(false);
               }}
               isDataActive={isDataActive}
+              screenBrightness={screenBrightness}
+              onScreenBrightnessChange={setScreenBrightness}
+              onScreenBrightnessCommit={async (val) => {
+                if (!selectedDevice) return;
+                try {
+                  const res = await api.post("/device/settings/brightness", { deviceId: selectedDevice, value: val });
+                  if (res.data.success) {
+                    addRinchanLog("Pengaturan Kecerahan", res.data.message || `Kecerahan diubah menjadi ${val}%`, "success");
+                  }
+                } catch (err: any) {
+                  addRinchanLog("Gagal Mengubah Kecerahan", err.response?.data?.message || "Terjadi kesalahan", "warning");
+                }
+              }}
+              speakerVolume={speakerVolume}
+              onSpeakerVolumeChange={setSpeakerVolume}
+              onSpeakerVolumeCommit={async (val) => {
+                if (!selectedDevice) return;
+                try {
+                  const res = await api.post("/device/settings/volume", { deviceId: selectedDevice, value: val });
+                  if (res.data.success) {
+                    addRinchanLog("Pengaturan Volume", res.data.message || `Volume diubah menjadi ${val}%`, "success");
+                  }
+                } catch (err: any) {
+                  addRinchanLog("Gagal Mengubah Volume", err.response?.data?.message || "Terjadi kesalahan", "warning");
+                }
+              }}
             />
           </SheetContent>
         </Sheet>
@@ -154,6 +179,32 @@ export default function DashboardPage() {
                 }
               }}
               isDataActive={isDataActive}
+              screenBrightness={screenBrightness}
+              onScreenBrightnessChange={setScreenBrightness}
+              onScreenBrightnessCommit={async (val) => {
+                if (!selectedDevice) return;
+                try {
+                  const res = await api.post("/device/settings/brightness", { deviceId: selectedDevice, value: val });
+                  if (res.data.success) {
+                    addRinchanLog("Pengaturan Kecerahan", res.data.message || `Kecerahan diubah menjadi ${val}%`, "success");
+                  }
+                } catch (err: any) {
+                  addRinchanLog("Gagal Mengubah Kecerahan", err.response?.data?.message || "Terjadi kesalahan", "warning");
+                }
+              }}
+              speakerVolume={speakerVolume}
+              onSpeakerVolumeChange={setSpeakerVolume}
+              onSpeakerVolumeCommit={async (val) => {
+                if (!selectedDevice) return;
+                try {
+                  const res = await api.post("/device/settings/volume", { deviceId: selectedDevice, value: val });
+                  if (res.data.success) {
+                    addRinchanLog("Pengaturan Volume", res.data.message || `Volume diubah menjadi ${val}%`, "success");
+                  }
+                } catch (err: any) {
+                  addRinchanLog("Gagal Mengubah Volume", err.response?.data?.message || "Terjadi kesalahan", "warning");
+                }
+              }}
             />
           </div>
 
@@ -192,44 +243,9 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Bottom Row: Logs & Controls */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-              {/* Pomodoro Log Card */}
-              <div className="xl:col-span-2 h-full">
-                <PomodoroLogCard currentSessionId={sessionId} />
-              </div>
-
-              {/* Controls Panel */}
-              <div className="h-full">
-                <ControlsPanel
-                  screenBrightness={screenBrightness}
-                  onScreenBrightnessChange={setScreenBrightness}
-                  onScreenBrightnessCommit={async (val) => {
-                    if (!selectedDevice) return;
-                    try {
-                      const res = await api.post("/device/settings/brightness", { deviceId: selectedDevice, value: val });
-                      if (res.data.success) {
-                        addRinchanLog("Pengaturan Kecerahan", res.data.message || `Kecerahan diubah menjadi ${val}%`, "success");
-                      }
-                    } catch (err: any) {
-                      addRinchanLog("Gagal Mengubah Kecerahan", err.response?.data?.message || "Terjadi kesalahan", "warning");
-                    }
-                  }}
-                  speakerVolume={speakerVolume}
-                  onSpeakerVolumeChange={setSpeakerVolume}
-                  onSpeakerVolumeCommit={async (val) => {
-                    if (!selectedDevice) return;
-                    try {
-                      const res = await api.post("/device/settings/volume", { deviceId: selectedDevice, value: val });
-                      if (res.data.success) {
-                        addRinchanLog("Pengaturan Volume", res.data.message || `Volume diubah menjadi ${val}%`, "success");
-                      }
-                    } catch (err: any) {
-                      addRinchanLog("Gagal Mengubah Volume", err.response?.data?.message || "Terjadi kesalahan", "warning");
-                    }
-                  }}
-                />
-              </div>
+            {/* Bottom Row: Pomodoro Log full-width */}
+            <div>
+              <PomodoroLogCard currentSessionId={sessionId} />
             </div>
           </main>
         </div>

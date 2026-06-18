@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Play, Pause, RotateCcw, Coffee, Brain, Settings2, Book, Laptop, Smartphone, Monitor, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,33 @@ export function PomodoroTimer({
   onUpdateSettings,
   isComplete,
 }: PomodoroTimerProps) {
+  // Draft state lokal untuk popover — hanya commit ke hook saat popover ditutup
+  const [draft, setDraft] = useState<PomodoroSettings>(settings);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  // Sync draft jika settings dari luar berubah (misalnya setelah load dari API)
+  useEffect(() => {
+    if (!popoverOpen) {
+      setDraft(settings);
+    }
+  }, [settings, popoverOpen]);
+
+  const handlePopoverOpenChange = (open: boolean) => {
+    if (!open) {
+      // Commit perubahan ke hook hanya jika ada yang berbeda
+      const changed: Partial<PomodoroSettings> = {};
+      if (draft.focusDuration !== settings.focusDuration) changed.focusDuration = draft.focusDuration;
+      if (draft.breakDuration !== settings.breakDuration) changed.breakDuration = draft.breakDuration;
+      if (draft.totalCycles !== settings.totalCycles) changed.totalCycles = draft.totalCycles;
+      if (draft.learningMedia !== settings.learningMedia) changed.learningMedia = draft.learningMedia;
+
+      if (Object.keys(changed).length > 0) {
+        onUpdateSettings(changed);
+      }
+    }
+    setPopoverOpen(open);
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -88,7 +116,7 @@ export function PomodoroTimer({
           </div>
           
           {/* Settings Popover */}
-          <Popover>
+          <Popover open={popoverOpen} onOpenChange={handlePopoverOpenChange}>
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
@@ -117,12 +145,12 @@ export function PomodoroTimer({
                       Durasi Fokus
                     </Label>
                     <span className="text-sm font-medium text-primary">
-                      {settings.focusDuration} menit
+                      {draft.focusDuration} menit
                     </span>
                   </div>
                   <Slider
-                    value={[settings.focusDuration]}
-                    onValueChange={([value]) => onUpdateSettings({ focusDuration: value })}
+                    value={[draft.focusDuration]}
+                    onValueChange={([value]) => setDraft(prev => ({ ...prev, focusDuration: value }))}
                     min={5}
                     max={60}
                     step={5}
@@ -138,12 +166,12 @@ export function PomodoroTimer({
                       Durasi Istirahat
                     </Label>
                     <span className="text-sm font-medium text-success">
-                      {settings.breakDuration} menit
+                      {draft.breakDuration} menit
                     </span>
                   </div>
                   <Slider
-                    value={[settings.breakDuration]}
-                    onValueChange={([value]) => onUpdateSettings({ breakDuration: value })}
+                    value={[draft.breakDuration]}
+                    onValueChange={([value]) => setDraft(prev => ({ ...prev, breakDuration: value }))}
                     min={1}
                     max={30}
                     step={1}
@@ -156,12 +184,12 @@ export function PomodoroTimer({
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">Pengulangan</Label>
                     <span className="text-sm font-medium">
-                      {settings.totalCycles}x siklus
+                      {draft.totalCycles}x siklus
                     </span>
                   </div>
                   <Slider
-                    value={[settings.totalCycles]}
-                    onValueChange={([value]) => onUpdateSettings({ totalCycles: value })}
+                    value={[draft.totalCycles]}
+                    onValueChange={([value]) => setDraft(prev => ({ ...prev, totalCycles: value }))}
                     min={1}
                     max={10}
                     step={1}
@@ -175,11 +203,11 @@ export function PomodoroTimer({
                   <div className="grid grid-cols-4 gap-2">
                     {LEARNING_MEDIA_OPTIONS.map((option) => {
                       const Icon = option.icon;
-                      const isSelected = settings.learningMedia === option.value;
+                      const isSelected = draft.learningMedia === option.value;
                       return (
                         <button
                           key={option.value}
-                          onClick={() => onUpdateSettings({ learningMedia: option.value })}
+                          onClick={() => setDraft(prev => ({ ...prev, learningMedia: option.value }))}
                           className={cn(
                             "flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all border",
                             isSelected
@@ -194,6 +222,11 @@ export function PomodoroTimer({
                     })}
                   </div>
                 </div>
+
+                {/* Hint */}
+                <p className="text-[11px] text-muted-foreground/60 text-center pt-1">
+                  Perubahan tersimpan otomatis saat ditutup
+                </p>
               </div>
             </PopoverContent>
           </Popover>
