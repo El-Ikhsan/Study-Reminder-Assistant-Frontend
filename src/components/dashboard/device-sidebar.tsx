@@ -228,7 +228,7 @@ export function DeviceSidebar({
       <div className="p-4 border-b border-border/30 shrink-0">
         <h2 className="font-semibold text-sm text-foreground/80">Devices</h2>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {devices.filter((d) => (d.id === selectedDevice && isDataActive)).length} of{" "}
+          {devices.filter((d) => (d.id === selectedDevice && isDataActive)).length} dari{" "}
           {devices.length} online
         </p>
       </div>
@@ -316,7 +316,7 @@ export function DeviceSidebar({
                   <span className="text-[10px] text-destructive/70 font-medium">offline</span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">Device hardware controls</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Kontrol Perangkat IoT</p>
             </div>
             <div className={cn("py-5 px-3 transition-opacity", !isDeviceOnline && "opacity-50")}>
               <div className="flex justify-evenly items-end">

@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +24,7 @@ export default function RegisterPage() {
 
     try {
       const response = await api.post("/auth/register", { name, email, password });
-      
+
       if (response.data.success) {
         setSuccess("Registrasi berhasil! Mengarahkan ke halaman login...");
         setTimeout(() => {
@@ -46,10 +46,10 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center mb-4 border border-primary/30 shadow-lg">
-            <span className="text-primary font-bold text-3xl">R</span>
+          <div className="w-19 h-15 flex items-center justify-center mb-4">
+            <img src="/onigiri-logo.png" alt="" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Buat Akun Rinchan</h1>
+          <h1 className="text-2xl font-bold text-foreground">Buat Akun Study Reminder Assistant</h1>
           <p className="text-sm text-muted-foreground mt-2">
             Mulai kelola IoT dan fokus belajar Anda
           </p>
@@ -133,14 +133,14 @@ export default function RegisterPage() {
               ) : (
                 <UserPlus className="w-4 h-4" />
               )}
-              {isLoading ? "Memproses..." : "Daftar"}
+              {isLoading ? "Memproses..." : "Register"}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Sudah punya akun?{" "}
             <Link to="/login" className="text-primary hover:underline font-medium">
-              Masuk di sini
+              Login di sini
             </Link>
           </div>
         </div>

@@ -130,7 +130,7 @@ export function StatusBar({
             <div className="w-10 h-8  justify-center shrink-0">
               <img src="/onigiri-logo.png" alt="" className="w-full h-full object-cover" />
             </div>
-            <span className="font-medium text-foreground/90 hidden sm:inline">Smart Companion</span>
+            <span className="font-medium text-foreground/90 hidden sm:inline">Study Reminder Assistant</span>
           </div>
           <Separator orientation="vertical" className="h-5 bg-border/50 hidden sm:block" />
           <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">

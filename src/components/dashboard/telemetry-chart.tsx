@@ -46,7 +46,7 @@ export function TelemetryChart({ data, activeMetric, onMetricChange }: Telemetry
         <div>
           <h3 className="text-lg font-semibold">Live Telemetry</h3>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Real-time sensor data over the last 30 minutes
+            Data sensor realtime selama 30 menit terakhir
           </p>
         </div>
         <div className="flex gap-1 p-1 bg-secondary/50 rounded-xl">
