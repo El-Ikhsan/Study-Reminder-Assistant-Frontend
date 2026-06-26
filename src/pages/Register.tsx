@@ -81,6 +81,13 @@ export default function RegisterPage() {
                   className="pl-10 bg-secondary/50 border-border/50"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  onInvalid={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.validity.valueMissing) {
+                      target.setCustomValidity("Harap masukkan nama lengkap Anda.");
+                    }
+                  }}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
                   required
                 />
               </div>
@@ -99,6 +106,15 @@ export default function RegisterPage() {
                   className="pl-10 bg-secondary/50 border-border/50"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onInvalid={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.validity.valueMissing) {
+                      target.setCustomValidity("Harap masukkan alamat email Anda.");
+                    } else if (target.validity.typeMismatch) {
+                      target.setCustomValidity("Harap sertakan '@' pada alamat email.");
+                    }
+                  }}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
                   required
                 />
               </div>
@@ -118,6 +134,15 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={8}
+                  onInvalid={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.validity.valueMissing) {
+                      target.setCustomValidity("Harap masukkan password Anda.");
+                    } else if (target.validity.tooShort) {
+                      target.setCustomValidity("Harap gunakan minimal 8 karakter untuk password.");
+                    }
+                  }}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
                   required
                 />
               </div>

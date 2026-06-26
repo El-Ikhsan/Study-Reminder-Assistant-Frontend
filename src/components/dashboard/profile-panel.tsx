@@ -69,7 +69,10 @@ export function ProfilePanel({
   };
 
   const handleSave = () => {
-    onUpdateProfile(formData);
+    const payload = { ...formData };
+    if (!payload.oldPassword) delete payload.oldPassword;
+    if (!payload.newPassword) delete payload.newPassword;
+    onUpdateProfile(payload);
     setIsEditing(false);
   };
 
@@ -101,7 +104,7 @@ export function ProfilePanel({
       <SheetContent className="glass-panel border-l-glass-border sm:max-w-md p-0 overflow-hidden flex flex-col h-full w-[85vw] sm:w-full">
         {/* Header with gradient */}
         <div className="relative h-28 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent">
-          
+
           {/* Avatar overlapping header */}
           <div className="absolute -bottom-12 left-6">
             <div className="relative group">
@@ -111,7 +114,7 @@ export function ProfilePanel({
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              
+
               {/* Avatar overlay on hover */}
               <button
                 onClick={handleAvatarClick}
@@ -123,7 +126,7 @@ export function ProfilePanel({
               >
                 <Camera className="w-6 h-6 text-foreground" />
               </button>
-              
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -157,7 +160,7 @@ export function ProfilePanel({
                   onClick={handleCancel}
                   className="text-muted-foreground"
                 >
-                  Batal
+                  Cancel
                 </Button>
                 <Button
                   size="sm"
@@ -165,7 +168,7 @@ export function ProfilePanel({
                   className="gap-1.5"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  Simpan
+                  Save
                 </Button>
               </div>
             )}
@@ -247,7 +250,7 @@ export function ProfilePanel({
           {/* Logout */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">Keluar</p>
+              <p className="text-sm font-medium">Logout</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Logout dari akun Anda
               </p>
@@ -259,7 +262,7 @@ export function ProfilePanel({
               className="text-destructive hover:text-destructive hover:bg-destructive/10 border-border/50"
             >
               <LogOut className="w-3.5 h-3.5 mr-1.5" />
-              Keluar
+              Logout
             </Button>
           </div>
         </div>

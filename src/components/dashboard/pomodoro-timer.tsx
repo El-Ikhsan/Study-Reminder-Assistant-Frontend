@@ -87,8 +87,8 @@ export function PomodoroTimer({
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const totalTime = sessionType === "focus" 
-    ? settings.focusDuration * 60 
+  const totalTime = sessionType === "focus"
+    ? settings.focusDuration * 60
     : settings.breakDuration * 60;
   const progress = totalTime > 0 ? ((totalTime - timeLeft) / totalTime) * 100 : 0;
   const circumference = 2 * Math.PI * 88;
@@ -114,7 +114,7 @@ export function PomodoroTimer({
             <MediaIcon className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{currentMediaOption?.label}</span>
           </div>
-          
+
           {/* Settings Popover */}
           <Popover open={popoverOpen} onOpenChange={handlePopoverOpenChange}>
             <PopoverTrigger asChild>
@@ -126,15 +126,15 @@ export function PomodoroTimer({
                 <Settings2 className="w-4 h-4 text-muted-foreground" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent 
-              className="w-80 glass-panel border-border/50 p-4" 
+            <PopoverContent
+              className="w-80 glass-panel border-border/50 p-4"
               align="end"
               sideOffset={8}
             >
               <div className="space-y-5">
                 <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                   <Settings2 className="w-4 h-4 text-primary" />
-                  <h4 className="font-medium">Pengaturan Pomodoro</h4>
+                  <h4 className="font-medium">Pomodoro Settings</h4>
                 </div>
 
                 {/* Focus Duration */}
@@ -237,8 +237,8 @@ export function PomodoroTimer({
       <div className="flex items-center justify-center gap-2 mb-4">
         <div className={cn(
           "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-          sessionType === "focus" 
-            ? "bg-primary/10 text-primary" 
+          sessionType === "focus"
+            ? "bg-primary/10 text-primary"
             : "bg-success/10 text-success"
         )}>
           {sessionType === "focus" ? (

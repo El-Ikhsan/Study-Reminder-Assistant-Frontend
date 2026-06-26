@@ -80,6 +80,15 @@ export default function LoginPage() {
                   className="pl-10 bg-secondary/50 border-border/50"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onInvalid={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.validity.valueMissing) {
+                      target.setCustomValidity("Harap masukkan alamat email Anda.");
+                    } else if (target.validity.typeMismatch) {
+                      target.setCustomValidity("Harap sertakan '@' pada alamat email.");
+                    }
+                  }}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
                   required
                 />
               </div>
@@ -103,6 +112,13 @@ export default function LoginPage() {
                   className="pl-10 bg-secondary/50 border-border/50"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onInvalid={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.validity.valueMissing) {
+                      target.setCustomValidity("Harap masukkan password Anda.");
+                    }
+                  }}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
                   required
                 />
               </div>

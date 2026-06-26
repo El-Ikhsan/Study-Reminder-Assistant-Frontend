@@ -312,13 +312,10 @@ export function DeviceSidebar({
             <div className="px-4 py-3 border-b border-border/30">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-sm text-foreground/80">Settings</h2>
-                {!isDeviceOnline && (
-                  <span className="text-[10px] text-destructive/70 font-medium">offline</span>
-                )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">Kontrol Perangkat IoT</p>
             </div>
-            <div className={cn("py-5 px-3 transition-opacity", !isDeviceOnline && "opacity-50")}>
+            <div className="py-5 px-3 transition-opacity">
               <div className="flex justify-evenly items-end">
                 {/* Brightness */}
                 <div className="flex flex-col items-center gap-3 w-16">
@@ -327,10 +324,15 @@ export function DeviceSidebar({
                       orientation="vertical"
                       value={[screenBrightness]}
                       onValueChange={([v]) => onScreenBrightnessChange(v)}
-                      onValueCommit={([v]) => onScreenBrightnessCommit(v)}
+                      onValueCommit={([v]) => {
+                        if (!isDeviceOnline) {
+                          addRinchanLog("Perangkat Offline", "Perangkat sedang offline. Kecerahan layar tidak dapat diterapkan.", "warning");
+                          return;
+                        }
+                        onScreenBrightnessCommit(v);
+                      }}
                       max={100}
                       step={1}
-                      disabled={!isDeviceOnline}
                       className="!min-h-0 !h-28 [&_[data-slot=slider-track]]:!w-2"
                     />
                   </div>
@@ -348,10 +350,15 @@ export function DeviceSidebar({
                       orientation="vertical"
                       value={[speakerVolume]}
                       onValueChange={([v]) => onSpeakerVolumeChange(v)}
-                      onValueCommit={([v]) => onSpeakerVolumeCommit(v)}
+                      onValueCommit={([v]) => {
+                        if (!isDeviceOnline) {
+                          addRinchanLog("Perangkat Offline", "Perangkat sedang offline. Volume suara tidak dapat diterapkan.", "warning");
+                          return;
+                        }
+                        onSpeakerVolumeCommit(v);
+                      }}
                       max={100}
                       step={1}
-                      disabled={!isDeviceOnline}
                       className="!min-h-0 !h-28 [&_[data-slot=slider-track]]:!w-2"
                     />
                   </div>
@@ -374,12 +381,12 @@ export function DeviceSidebar({
                 className="w-full h-10 gap-2 rounded-xl border border-dashed border-border/50 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all"
               >
                 <Plus className="w-4 h-4" />
-                <span className="text-sm">Add Device</span>
+                <span className="text-sm">Claim Device</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="glass-panel border-glass-border sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Add New Device</DialogTitle>
+                <DialogTitle>Claim Device</DialogTitle>
                 <DialogDescription>
                   Hubungkan perangkat IoT baru ke jaringan Rinchan Anda.
                 </DialogDescription>
@@ -391,7 +398,7 @@ export function DeviceSidebar({
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="device-name">Device Name</Label>
+                  <Label htmlFor="device-name">Nama Device</Label>
                   <Input
                     id="device-name"
                     placeholder="e.g., Rinchan Room"
@@ -416,7 +423,7 @@ export function DeviceSidebar({
                     Cancel
                   </Button>
                   <Button className="flex-1" onClick={handleClaimDevice} disabled={isClaiming}>
-                    {isClaiming ? "Adding..." : "Add Device"}
+                    {isClaiming ? "Claiming..." : "Claim Device"}
                   </Button>
                 </div>
               </div>
@@ -429,15 +436,33 @@ export function DeviceSidebar({
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="glass-panel border-glass-border sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Device Details</DialogTitle>
+            <div className="flex items-center justify-between pr-8">
+              <DialogTitle>Device Details</DialogTitle>
+              {deviceToDetail && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/50 border border-border/50">
+                  <Circle
+                    className={cn(
+                      "w-2 h-2 fill-current",
+                      statusColors[(deviceToDetail.id === selectedDevice && isDataActive) ? "online" : "offline"]
+                    )}
+                    style={{
+                      color: `var(--${(deviceToDetail.id === selectedDevice && isDataActive) ? "success" : "destructive"})`,
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground capitalize font-normal">
+                    {(deviceToDetail.id === selectedDevice && isDataActive) ? "online" : "offline"}
+                  </span>
+                </div>
+              )}
+            </div>
             <DialogDescription>
-              View and manage settings for your IoT device.
+              Lihat dan kelola pengaturan untuk perangkat IoT Anda.
             </DialogDescription>
           </DialogHeader>
           {deviceToDetail && (
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-device-name">Device Name</Label>
+                <Label htmlFor="edit-device-name">Nama Device</Label>
                 <div className="flex gap-2">
                   <Input
                     id="edit-device-name"
@@ -463,7 +488,7 @@ export function DeviceSidebar({
               </div>
 
               <div className="space-y-2">
-                <Label>Version Token</Label>
+                <Label>Versi Token</Label>
                 <div className="flex gap-2">
                   <div className="flex-1 px-3 py-2 bg-secondary/30 rounded-md border border-border/50 font-mono text-sm flex items-center">
                     <span>v{deviceToDetail.tokenVersion || 1}</span>
@@ -491,7 +516,7 @@ export function DeviceSidebar({
                   onClick={() => setDeleteConfirmOpen(true)}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Hapus Perangkat
+                  Delete Device
                 </Button>
               </div>
             </div>
@@ -524,7 +549,7 @@ export function DeviceSidebar({
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="glass-panel border-glass-border sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-destructive">Hapus Perangkat</DialogTitle>
+            <DialogTitle className="text-destructive">Delete Device</DialogTitle>
             <DialogDescription>
               Tindakan ini tidak dapat dibatalkan. Menghapus perangkat akan{" "}
               <b>menghapus seluruh data historis (sesi pomodoro, dll)</b> yang terkait dengan perangkat ini selamanya.
@@ -533,10 +558,10 @@ export function DeviceSidebar({
           </DialogHeader>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={isDeleting}>
-              Batal
+              Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteDevice} disabled={isDeleting}>
-              {isDeleting ? "Menghapus..." : "Hapus Permanen"}
+              {isDeleting ? "Deleting..." : "Delete Permanently"}
             </Button>
           </DialogFooter>
         </DialogContent>

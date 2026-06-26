@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "@/components/theme-provider";
 import {
   Sheet,
@@ -29,17 +29,21 @@ interface SettingsSheetProps {
 }
 
 export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
-  const [notifications, setNotifications] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("rinchan_push_notifications");
-      return saved !== null ? saved === "true" : true;
-    }
-    return true;
-  });
   const { theme, setTheme } = useTheme();
+  const [notifications, setNotifications] = useState(true);
+  const [localTheme, setLocalTheme] = useState(theme);
+
+  useEffect(() => {
+    if (open) {
+      const saved = localStorage.getItem("rinchan_push_notifications");
+      setNotifications(saved !== null ? saved === "true" : true);
+      setLocalTheme(theme);
+    }
+  }, [open, theme]);
 
   const handleSave = () => {
     localStorage.setItem("rinchan_push_notifications", String(notifications));
+    setTheme(localTheme);
     onOpenChange(false);
   };
 
@@ -47,9 +51,9 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="glass-panel border-l-glass-border w-[85vw] sm:w-[540px] overflow-y-auto p-6 sm:p-8">
         <SheetHeader className="space-y-1 p-0">
-          <SheetTitle className="text-xl">Pengaturan</SheetTitle>
+          <SheetTitle className="text-xl">Dashboard Settings</SheetTitle>
           <SheetDescription>
-            Atur preferensi dashboard Rinchan Anda
+            Atur preferensi dashboard Anda
           </SheetDescription>
         </SheetHeader>
 
@@ -92,7 +96,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
             <div className="pl-11">
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Tema</Label>
-                <Select value={theme} onValueChange={setTheme}>
+                <Select value={localTheme} onValueChange={(value) => setLocalTheme(value as any)}>
                   <SelectTrigger className="bg-secondary/50 border-border/50 h-10">
                     <SelectValue />
                   </SelectTrigger>
@@ -109,7 +113,7 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
           <div className="pt-4">
             <Button className="w-full gap-2" onClick={handleSave}>
               <Save className="w-4 h-4" />
-              Simpan Perubahan
+              Save Changes
             </Button>
           </div>
         </div>
