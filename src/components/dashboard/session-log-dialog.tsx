@@ -89,12 +89,27 @@ const LOG_TYPE_CONFIG = {
 };
 
 const EMOTION_CONFIG: Record<string, { color: string; bg: string }> = {
-  IDLE: { color: "text-muted-foreground", bg: "bg-secondary/50" },
-  DARK: { color: "text-warning", bg: "bg-warning/10" },
+  IDLE:  { color: "text-muted-foreground", bg: "bg-secondary/50" },
+  DARK:  { color: "text-warning", bg: "bg-warning/10" },
+  GLARE: { color: "text-yellow-400", bg: "bg-yellow-400/10" },
   NOISY: { color: "text-destructive", bg: "bg-destructive/10" },
-  HOT: { color: "text-orange-500", bg: "bg-orange-500/10" },
-  COLD: { color: "text-blue-500", bg: "bg-blue-500/10" },
+  HOT:   { color: "text-orange-500", bg: "bg-orange-500/10" },
+  COLD:  { color: "text-blue-500", bg: "bg-blue-500/10" },
+  SMILE: { color: "text-success", bg: "bg-success/10" },
 };
+
+// Tabel 4.3: Label tampilan yang bersih
+const EMOTION_LABEL: Record<string, string> = {
+  IDLE:  "Idle",
+  DARK:  "Dark",
+  GLARE: "Glare",
+  HOT:   "Hot",
+  COLD:  "Cold",
+  NOISY: "Noisy",
+  SMILE: "Smile",
+};
+
+const getEmotionLabel = (raw: string) => EMOTION_LABEL[raw] ?? raw;
 
 // Mock function to fetch session logs - replace with actual API call
 const fetchSessionLogs = async (sessionId: string): Promise<SessionLogData> => {
@@ -381,7 +396,7 @@ export function SessionLogDialog({
                                   emotionConfig.color
                                 )}
                               >
-                                {log.emotion}
+                                {getEmotionLabel(log.emotion)}
                               </span>
                             </div>
                             <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
@@ -474,7 +489,7 @@ export function SessionLogDialog({
                                   emotionConfig.color
                                 )}
                               >
-                                {event.emotion}
+                                {getEmotionLabel(event.emotion)}
                               </span>
                             </div>
                           </div>

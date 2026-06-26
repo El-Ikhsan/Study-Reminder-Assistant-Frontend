@@ -241,23 +241,21 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
       intervalRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            // Session complete
             if (sessionType === "focus") {
-              // Switch to break
-              setSessionType("break");
-              return settings.breakDuration * 60;
-            } else {
-              // Break finished, move to next focus cycle
-              setSessionsCompleted((s) => s + 1);
-
-              // Check if all cycles are done
+              // ✨ LOGIKA BARU: Cek apakah ini siklus fokus TERAKHIR
+              // Jika iya, sesi langsung selesai TANPA fase istirahat
               if (currentCycle >= settings.totalCycles) {
                 clearTimer();
                 setIsRunning(false);
                 setIsComplete(true);
+                setSessionsCompleted((s) => s + 1);
                 return 0;
               }
-
+              // Masih ada siklus berikutnya — masuk ke istirahat
+              setSessionType("break");
+              return settings.breakDuration * 60;
+            } else {
+              // Istirahat selesai — naikkan siklus dan mulai fokus berikutnya
               setCurrentCycle((c) => c + 1);
               setSessionType("focus");
               return settings.focusDuration * 60;

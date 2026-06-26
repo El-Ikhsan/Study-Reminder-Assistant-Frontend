@@ -7,10 +7,7 @@ export interface PomodoroSession {
   restDuration: number;
   targetCycles: number;
   media: "Buku" | "Laptop" | "HP" | "Komputer";
-  currentCycle: number;
-  currentMode: "fokus" | "istirahat";
-  currentPhase: "awal" | "tengah" | "akhir";
-  status: "running" | "paused" | "completed" | "cancelled";
+  status: "running" | "completed" | "stopped";
   startedAt: string;
   endedAt: string | null;
 }
@@ -18,7 +15,6 @@ export interface PomodoroSession {
 export interface PomodoroLog {
   id: string;
   sessionId: string;
-  logType: "phase_alert" | "voice_chat" | "system_alert";
   currentCycle: number;
   pomodoroMode: "fokus" | "istirahat";
   triggerContext: string;

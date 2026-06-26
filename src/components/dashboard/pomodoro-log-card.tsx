@@ -8,6 +8,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+import {
   RefreshCw,
   Clock,
   MessageSquare,
@@ -24,6 +35,7 @@ import {
   CheckCircle2,
   XCircle,
   ChevronRight,
+  Trash2,
   ArrowLeft,
   Activity,
   Zap,
@@ -34,6 +46,20 @@ import type {
   SensorEvent,
   SessionLogData,
 } from "@/types/pomodoro";
+
+// Helper functions
+// Tabel 4.3: Label tampilan emotion yang bersih
+const EMOTION_LABEL: Record<string, string> = {
+  IDLE:  "Idle",
+  DARK:  "Dark",
+  GLARE: "Glare",
+  HOT:   "Hot",
+  COLD:  "Cold",
+  NOISY: "Noisy",
+  SMILE: "Smile",
+};
+
+const getEmotionLabel = (raw: string) => EMOTION_LABEL[raw] ?? raw;
 
 // Helper functions
 function formatDate(dateString: string): string {
@@ -91,10 +117,10 @@ function getStatusConfig(status: string) {
         label: "Selesai",
         className: "bg-sky-500/20 text-sky-400",
       };
-    case "cancelled":
+    case "stopped":
       return {
         icon: XCircle,
-        label: "Dibatalkan",
+        label: "Dihentikan",
         className: "bg-red-500/20 text-red-400",
       };
     default:
@@ -106,30 +132,24 @@ function getStatusConfig(status: string) {
   }
 }
 
-function getLogTypeConfig(logType: string) {
-  switch (logType) {
-    case "phase_alert":
+function getPomodoroModeConfig(mode: string) {
+  switch (mode) {
+    case "fokus":
       return {
-        icon: Clock,
-        label: "Fase",
+        icon: Activity,
+        label: "Fokus",
         className: "bg-sky-500/20 text-sky-400",
       };
-    case "voice_chat":
+    case "istirahat":
       return {
-        icon: MessageSquare,
-        label: "Voice",
-        className: "bg-violet-500/20 text-violet-400",
-      };
-    case "system_alert":
-      return {
-        icon: AlertTriangle,
-        label: "Sistem",
-        className: "bg-amber-500/20 text-amber-400",
+        icon: Clock,
+        label: "Istirahat",
+        className: "bg-emerald-500/20 text-emerald-400",
       };
     default:
       return {
         icon: Activity,
-        label: logType,
+        label: mode,
         className: "bg-muted text-muted-foreground",
       };
   }
@@ -206,7 +226,7 @@ function SessionLogView({
             onClick={() => setFilter("all")}
             className={cn("px-3 text-xs font-medium rounded-md transition-all", filter === "all" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
           >
-            Semua
+            All
           </button>
           <button
             onClick={() => setFilter("logs")}
@@ -228,7 +248,7 @@ function SessionLogView({
           {filteredItems.map((item) => {
             if (item.type === "log") {
               const log = item.data as PomodoroLog;
-              const config = getLogTypeConfig(log.logType);
+              const config = getPomodoroModeConfig(log.pomodoroMode);
               const LogIcon = config.icon;
               return (
                 <div key={log.id} className="glass-panel p-3 rounded-xl space-y-2">
@@ -254,7 +274,7 @@ function SessionLogView({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground">
-                      {log.emotion}
+                      {getEmotionLabel(log.emotion)}
                     </span>
                   </div>
                 </div>
@@ -274,13 +294,13 @@ function SessionLogView({
                       </div>
                       <div>
                         <p className="text-xs font-medium">{config.label}</p>
-                        <p className="text-[10px] text-muted-foreground">{event.triggerContext}</p>
                       </div>
                     </div>
                     <span className="text-[10px] text-muted-foreground font-mono">
                       {formatTime(event.createdAt)}
                     </span>
                   </div>
+                  <p className="text-xs text-muted-foreground">{event.triggerContext}</p>
                   <div className="bg-primary/5 rounded-lg p-2.5 border border-primary/10">
                     <p className="text-xs leading-relaxed">{event.aiResponse}</p>
                   </div>
@@ -299,7 +319,7 @@ function SessionLogView({
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground">
-                        {event.emotion}
+                        {getEmotionLabel(event.emotion)}
                       </span>
                     </div>
                   </div>
@@ -326,9 +346,11 @@ function SessionLogView({
 function SessionListItem({
   session,
   onClick,
+  onDelete,
 }: {
   session: PomodoroSession;
   onClick: () => void;
+  onDelete: (id: string) => void;
 }) {
   const MediaIcon = getMediaIcon(session.media);
   const statusConfig = getStatusConfig(session.status);
@@ -340,36 +362,44 @@ function SessionListItem({
       className={cn(
         "w-full glass-panel p-3 rounded-xl transition-all duration-200 text-left group",
         "hover:bg-secondary/40",
-        "focus:outline-none focus:ring-2 focus:ring-primary/20"
+        "focus:outline-none focus:ring-2 focus:ring-primary/20",
+        "flex items-center justify-between"
       )}
     >
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <MediaIcon className="w-4 h-4 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium truncate">Sesi {session.media}</p>
-            <div
-              className={cn(
-                "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium",
-                statusConfig.className
-              )}
-            >
-              <StatusIcon className="w-2.5 h-2.5" />
-              {statusConfig.label}
-            </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <MediaIcon className="w-4 h-4 text-primary" />
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {formatDate(session.startedAt)}
-          </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium truncate">Sesi {session.media}</p>
+              <div
+                className={cn(
+                  "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium",
+                  statusConfig.className
+                )}
+              >
+                <StatusIcon className="w-2.5 h-2.5" />
+                {statusConfig.label}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {formatDate(session.startedAt)}
+            </p>
+          </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        <div className="flex items-center gap-3 mt-2 pl-11 text-[10px] text-muted-foreground">
+          <span>Fokus: {session.focusDuration}m</span>
+          <span>Istirahat: {session.restDuration}m</span>
+          <span>Siklus: {session.targetCycles}x</span>
+        </div>
       </div>
-      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
-        <span>Fokus: {session.focusDuration}m</span>
-        <span>Istirahat: {session.restDuration}m</span>
-        <span>Siklus: {session.targetCycles}x</span>
+
+      <div className="flex items-center shrink-0 pl-2">
+        <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-destructive/10 text-destructive/50 hover:text-destructive transition-colors" onClick={(e) => { e.stopPropagation(); onDelete(session.id); }}>
+          <Trash2 className="w-6 h-6" />
+        </Button>
       </div>
     </button>
   );
@@ -383,6 +413,7 @@ interface PomodoroLogCardProps {
 export function PomodoroLogCard({ currentSessionId }: PomodoroLogCardProps) {
   const [activeView, setActiveView] = useState<"current" | "history">("current");
   const [selectedSession, setSelectedSession] = useState<PomodoroSession | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   const [sessions, setSessions] = useState<PomodoroSession[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
@@ -470,6 +501,21 @@ export function PomodoroLogCard({ currentSessionId }: PomodoroLogCardProps) {
     setSelectedSession(session);
   };
 
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return;
+    try {
+      const res = await api.delete(`/pomodoro/histories/${sessionToDelete}`);
+      if (res.data.success) {
+        setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete));
+        if (selectedSession?.id === sessionToDelete) setSelectedSession(null);
+      }
+    } catch (err) {
+      console.error("Gagal menghapus sesi", err);
+    } finally {
+      setSessionToDelete(null);
+    }
+  };
+
 
   return (
     <div className="glass-panel rounded-2xl p-5 h-[600px] flex flex-col">
@@ -493,14 +539,14 @@ export function PomodoroLogCard({ currentSessionId }: PomodoroLogCardProps) {
                 <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               )}
               <Play className="w-3.5 h-3.5 mr-1.5" />
-              Sesi Aktif
+              Active
             </TabsTrigger>
             <TabsTrigger
               value="history"
               className="rounded-lg data-[state=active]:bg-background/80 data-[state=active]:shadow-sm text-xs"
             >
               <Clock className="w-3.5 h-3.5 mr-1.5" />
-              Riwayat
+              History
             </TabsTrigger>
           </TabsList>
         </div>
@@ -544,6 +590,7 @@ export function PomodoroLogCard({ currentSessionId }: PomodoroLogCardProps) {
                       key={session.id}
                       session={session}
                       onClick={() => handleSelectSession(session)}
+                      onDelete={(id) => setSessionToDelete(id)}
                     />
                   ))
                 )}
@@ -581,6 +628,12 @@ export function PomodoroLogCard({ currentSessionId }: PomodoroLogCardProps) {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {formatDate(selectedSession.startedAt)}
                     </p>
+                    <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                      <span>Fokus: {selectedSession.focusDuration}m</span>
+                      <span>Istirahat: {selectedSession.restDuration}m</span>
+                      <span>Siklus: {selectedSession.targetCycles}x</span>
+                      <span>Media: {selectedSession.media}</span>
+                    </div>
                   </div>
                 </div>
                 <Button
@@ -590,7 +643,7 @@ export function PomodoroLogCard({ currentSessionId }: PomodoroLogCardProps) {
                   className="gap-2 border-border/50 hover:bg-secondary/50 h-8"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  Kembali
+                  Back
                 </Button>
               </div>
               <div className="p-4 flex-1 min-h-0">
@@ -610,6 +663,23 @@ export function PomodoroLogCard({ currentSessionId }: PomodoroLogCardProps) {
           )}
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">Delete Pomodoro Session</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus sesi Pomodoro ini? Semua data log terkait (Pomodoro Log dan Sensor Log) juga akan ikut terhapus dan tidak dapat dikembalikan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSession} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

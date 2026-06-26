@@ -352,9 +352,11 @@ export function PomodoroTimer({
             key={i}
             className={cn(
               "w-2 h-2 rounded-full transition-all",
+              // Siklus ke-i selesai jika currentCycle sudah melampaui i+1,
+              // ATAU jika sedang di break setelah fokus ke-i+1 (break antara siklus)
               i < currentCycle - 1 || (i === currentCycle - 1 && sessionType === "break")
                 ? "bg-primary"
-                : i === currentCycle - 1 && isRunning
+                : i === currentCycle - 1 && isRunning && sessionType === "focus"
                   ? "bg-primary/50 animate-pulse-soft"
                   : "bg-secondary/50"
             )}
