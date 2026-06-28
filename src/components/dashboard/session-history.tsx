@@ -46,19 +46,14 @@ const STATUS_CONFIG = {
     label: "Berjalan",
     className: "text-primary bg-primary/10",
   },
-  paused: {
-    icon: PauseCircle,
-    label: "Dijeda",
-    className: "text-warning bg-warning/10",
-  },
   completed: {
     icon: CheckCircle2,
     label: "Selesai",
     className: "text-success bg-success/10",
   },
-  cancelled: {
+  stopped: {
     icon: XCircle,
-    label: "Dibatalkan",
+    label: "Dihentikan",
     className: "text-destructive bg-destructive/10",
   },
 };

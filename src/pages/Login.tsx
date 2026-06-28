@@ -95,12 +95,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <a href="#" className="text-xs text-primary hover:underline">
-                  Lupa password?
-                </a>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-4 w-4 text-muted-foreground" />

@@ -53,38 +53,15 @@ const STATUS_CONFIG = {
     label: "Berjalan",
     className: "text-primary bg-primary/10",
   },
-  paused: {
-    icon: PauseCircle,
-    label: "Dijeda",
-    className: "text-warning bg-warning/10",
-  },
   completed: {
     icon: CheckCircle2,
     label: "Selesai",
     className: "text-success bg-success/10",
   },
-  cancelled: {
+  stopped: {
     icon: XCircle,
-    label: "Dibatalkan",
+    label: "Dihentikan",
     className: "text-destructive bg-destructive/10",
-  },
-};
-
-const LOG_TYPE_CONFIG = {
-  phase_alert: {
-    icon: Bell,
-    label: "Fase Alert",
-    className: "text-primary bg-primary/10",
-  },
-  voice_chat: {
-    icon: MessageSquare,
-    label: "Voice Chat",
-    className: "text-accent bg-accent/10",
-  },
-  system_alert: {
-    icon: AlertTriangle,
-    label: "System Alert",
-    className: "text-warning bg-warning/10",
   },
 };
 
@@ -123,7 +100,6 @@ const fetchSessionLogs = async (sessionId: string): Promise<SessionLogData> => {
         {
           id: "e655f64f-fa6f-480f-b9d8-b3de769d8e92",
           sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-          logType: "phase_alert",
           currentCycle: 1,
           pomodoroMode: "fokus",
           triggerContext: "Pomodoro: Fase Awal Fokus [Waktu: 5 Menit] [Media: Laptop]",
@@ -134,7 +110,6 @@ const fetchSessionLogs = async (sessionId: string): Promise<SessionLogData> => {
         {
           id: "f947fcf6-60a9-4937-be08-3678cb18f43f",
           sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-          logType: "phase_alert",
           currentCycle: 1,
           pomodoroMode: "fokus",
           triggerContext: "Pomodoro: Fase Pertengahan Fokus [Waktu: 3 Menit]",
@@ -145,7 +120,6 @@ const fetchSessionLogs = async (sessionId: string): Promise<SessionLogData> => {
         {
           id: "55a72f0d-cb3f-475f-a2a8-d212b725c118",
           sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-          logType: "phase_alert",
           currentCycle: 1,
           pomodoroMode: "fokus",
           triggerContext: "Pomodoro: Fase Akhir Fokus [Waktu: 22 Detik] [Media: Laptop]",
@@ -156,7 +130,6 @@ const fetchSessionLogs = async (sessionId: string): Promise<SessionLogData> => {
         {
           id: "ec0b2e7c-26ef-41a5-ac67-584506469d09",
           sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-          logType: "phase_alert",
           currentCycle: 1,
           pomodoroMode: "istirahat",
           triggerContext: "Pomodoro: Fase Istirahat Pendek [Waktu: 2 Menit]",
@@ -167,7 +140,6 @@ const fetchSessionLogs = async (sessionId: string): Promise<SessionLogData> => {
         {
           id: "a823fee5-79e3-4529-aa95-7a81ab08596e",
           sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-          logType: "phase_alert",
           currentCycle: 1,
           pomodoroMode: "istirahat",
           triggerContext: "Pomodoro: Fase Peringatan Istirahat Akhir [Waktu: 11 Detik]",
@@ -178,7 +150,6 @@ const fetchSessionLogs = async (sessionId: string): Promise<SessionLogData> => {
         {
           id: "35696538-15cf-4856-af9e-993c4ba2fb1b",
           sessionId: "5ae880f3-25a3-4166-bea8-951d3dfb3512",
-          logType: "phase_alert",
           currentCycle: 1,
           pomodoroMode: "istirahat",
           triggerContext: "Pomodoro: Sesi Selesai [Putaran: 1] [Media: Laptop]",
@@ -344,8 +315,6 @@ export function SessionLogDialog({
               ) : (
                 <div className="space-y-3 pt-4">
                   {logData?.logs.map((log, index) => {
-                    const typeConfig = LOG_TYPE_CONFIG[log.logType];
-                    const TypeIcon = typeConfig.icon;
                     const emotionConfig = EMOTION_CONFIG[log.emotion] || EMOTION_CONFIG.IDLE;
 
                     return (
@@ -368,11 +337,11 @@ export function SessionLogDialog({
                               <div
                                 className={cn(
                                   "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
-                                  typeConfig.className
+                                  "text-primary bg-primary/10"
                                 )}
                               >
-                                <TypeIcon className="w-3 h-3" />
-                                {typeConfig.label}
+                                <Bell className="w-3 h-3" />
+                                Fase Alert
                               </div>
                               <div
                                 className={cn(

@@ -169,32 +169,15 @@ export function usePomodoro(deviceId: string): UsePomodoroReturn {
     }
   }, [isComplete, isRunning, deviceId, settings, currentCycle, sessionType, sessionId]);
 
-  const reset = useCallback(async () => {
-    if (sessionId) {
-      try {
-        await api.post("/pomodoro/stop", { sessionId, deviceId });
-        addRinchanLog(
-          "Sesi Direset",
-          "Sesi saat ini dibatalkan dan dikembalikan ke awal.",
-          "warning"
-        );
-      } catch (err: any) {
-        console.error("Gagal reset pomodoro", err);
-        addRinchanLog(
-          "Gagal Reset Sesi",
-          err.response?.data?.message || "Terjadi kesalahan.",
-          "warning"
-        );
-      }
-      setSessionId(null);
-    }
+  const reset = useCallback(() => {
+    setSessionId(null);
     clearTimer();
     setIsRunning(false);
     setSessionType("focus");
     setCurrentCycle(1);
     setTimeLeft(settings.focusDuration * 60);
     setIsComplete(false);
-  }, [settings.focusDuration, clearTimer, sessionId, deviceId]);
+  }, [settings.focusDuration, clearTimer]);
 
   const updateSettings = useCallback(
     async (newSettings: Partial<PomodoroSettings>) => {
