@@ -22,8 +22,8 @@ export default function DashboardPage() {
   const [activeMetric, setActiveMetric] = useState<"temperature" | "brightness" | "noise">("temperature");
   const [screenBrightness, setScreenBrightness] = useState(70);
   const [speakerVolume, setSpeakerVolume] = useState(45);
+  const [sensorConfig, setSensorConfig] = useState({ temperature: true, light: true, noise: true });
   
-
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -239,6 +239,21 @@ export default function DashboardPage() {
                   settings={settings}
                   onUpdateSettings={updateSettings}
                   isComplete={isComplete}
+                  sensorConfig={sensorConfig}
+                  isDeviceOnline={isDataActive}
+                  onSensorToggle={async (sensor, enabled) => {
+                    if (!selectedDevice) return;
+                    try {
+                      setSensorConfig((prev: any) => ({ ...prev, [sensor]: enabled }));
+                      const res = await api.post("/device/settings/sensor", { deviceId: selectedDevice, sensorType: sensor, enabled });
+                      if (res.data.success) {
+                        addRinchanLog("Pengaturan Sensor", res.data.message || `Sensor ${sensor} ${enabled ? 'menyala' : 'mati'}`, "success");
+                      }
+                    } catch (err: any) {
+                      setSensorConfig((prev: any) => ({ ...prev, [sensor]: !enabled }));
+                      addRinchanLog("Gagal Mengubah Sensor", err.response?.data?.message || "Terjadi kesalahan", "warning");
+                    }
+                  }}
                 />
               </div>
             </div>

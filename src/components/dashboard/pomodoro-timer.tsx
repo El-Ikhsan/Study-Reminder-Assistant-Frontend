@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, Pause, RotateCcw, Coffee, Brain, Settings2, Book, Laptop, Smartphone, Monitor, Check } from "lucide-react";
+import { Play, Pause, RotateCcw, Coffee, Brain, Settings2, Book, Laptop, Smartphone, Monitor, Check, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -33,6 +34,9 @@ interface PomodoroTimerProps {
   settings: PomodoroSettings;
   onUpdateSettings: (settings: Partial<PomodoroSettings>) => void;
   isComplete: boolean;
+  sensorConfig?: { temperature: boolean; light: boolean; noise: boolean };
+  isDeviceOnline?: boolean;
+  onSensorToggle?: (sensor: 'temperature' | 'light' | 'noise', enabled: boolean) => void;
 }
 
 const LEARNING_MEDIA_OPTIONS: { value: LearningMedia; label: string; icon: React.ElementType }[] = [
@@ -53,10 +57,14 @@ export function PomodoroTimer({
   settings,
   onUpdateSettings,
   isComplete,
+  sensorConfig = { temperature: true, light: true, noise: true },
+  isDeviceOnline = false,
+  onSensorToggle = () => {},
 }: PomodoroTimerProps) {
   // Draft state lokal untuk popover — hanya commit ke hook saat popover ditutup
   const [draft, setDraft] = useState<PomodoroSettings>(settings);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [demoPopoverOpen, setDemoPopoverOpen] = useState(false);
 
   // Sync draft jika settings dari luar berubah (misalnya setelah load dari API)
   useEffect(() => {
@@ -114,6 +122,65 @@ export function PomodoroTimer({
             <MediaIcon className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{currentMediaOption?.label}</span>
           </div>
+
+          {/* Demo Settings Popover (Sensor Toggles) */}
+          <Popover open={demoPopoverOpen} onOpenChange={setDemoPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg hover:bg-secondary/50 mr-1"
+                title="Demo Settings (Sensor Mute)"
+              >
+                <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-72 glass-panel border-border/50 p-4"
+              align="end"
+              sideOffset={8}
+            >
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                  <SlidersHorizontal className="w-4 h-4 text-primary" />
+                  <h4 className="font-medium">Demo Settings</h4>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Matikan sensor untuk mencegah interupsi AI saat Pomodoro berjalan (khusus untuk keperluan demo).
+                </p>
+
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm cursor-pointer" htmlFor="toggle-temp">Sensor Suhu</Label>
+                    <Switch
+                      id="toggle-temp"
+                      checked={sensorConfig.temperature}
+                      onCheckedChange={(c) => onSensorToggle('temperature', c)}
+                      disabled={!isDeviceOnline}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm cursor-pointer" htmlFor="toggle-light">Sensor Cahaya</Label>
+                    <Switch
+                      id="toggle-light"
+                      checked={sensorConfig.light}
+                      onCheckedChange={(c) => onSensorToggle('light', c)}
+                      disabled={!isDeviceOnline}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm cursor-pointer" htmlFor="toggle-noise">Sensor Suara</Label>
+                    <Switch
+                      id="toggle-noise"
+                      checked={sensorConfig.noise}
+                      onCheckedChange={(c) => onSensorToggle('noise', c)}
+                      disabled={!isDeviceOnline}
+                    />
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Settings Popover */}
           <Popover open={popoverOpen} onOpenChange={handlePopoverOpenChange}>
