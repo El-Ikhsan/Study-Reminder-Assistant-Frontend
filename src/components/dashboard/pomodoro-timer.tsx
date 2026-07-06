@@ -34,9 +34,9 @@ interface PomodoroTimerProps {
   settings: PomodoroSettings;
   onUpdateSettings: (settings: Partial<PomodoroSettings>) => void;
   isComplete: boolean;
-  sensorConfig?: { temperature: boolean; light: boolean; noise: boolean };
+  sensorConfig?: { temperature: boolean; light: boolean; noise: boolean; force_cold?: boolean };
   isDeviceOnline?: boolean;
-  onSensorToggle?: (sensor: 'temperature' | 'light' | 'noise', enabled: boolean) => void;
+  onSensorToggle?: (sensor: 'temperature' | 'light' | 'noise' | 'force_cold', enabled: boolean) => void;
 }
 
 const LEARNING_MEDIA_OPTIONS: { value: LearningMedia; label: string; icon: React.ElementType }[] = [
@@ -57,9 +57,9 @@ export function PomodoroTimer({
   settings,
   onUpdateSettings,
   isComplete,
-  sensorConfig = { temperature: true, light: true, noise: true },
+  sensorConfig = { temperature: true, light: true, noise: true, force_cold: false },
   isDeviceOnline = false,
-  onSensorToggle = () => {},
+  onSensorToggle = () => { },
 }: PomodoroTimerProps) {
   // Draft state lokal untuk popover — hanya commit ke hook saat popover ditutup
   const [draft, setDraft] = useState<PomodoroSettings>(settings);
@@ -174,6 +174,15 @@ export function PomodoroTimer({
                       id="toggle-noise"
                       checked={sensorConfig.noise}
                       onCheckedChange={(c) => onSensorToggle('noise', c)}
+                      disabled={!isDeviceOnline}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                    <Label className="text-sm cursor-pointer text-blue-400" htmlFor="toggle-cold">Trigger Dingin Extrem</Label>
+                    <Switch
+                      id="toggle-cold"
+                      checked={sensorConfig.force_cold}
+                      onCheckedChange={(c) => onSensorToggle('force_cold', c)}
                       disabled={!isDeviceOnline}
                     />
                   </div>

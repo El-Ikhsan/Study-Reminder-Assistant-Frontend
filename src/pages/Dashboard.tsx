@@ -22,7 +22,7 @@ export default function DashboardPage() {
   const [activeMetric, setActiveMetric] = useState<"temperature" | "brightness" | "noise">("temperature");
   const [screenBrightness, setScreenBrightness] = useState(70);
   const [speakerVolume, setSpeakerVolume] = useState(45);
-  const [sensorConfig, setSensorConfig] = useState({ temperature: true, light: true, noise: true });
+  const [sensorConfig, setSensorConfig] = useState({ temperature: true, light: true, noise: true, force_cold: false });
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
