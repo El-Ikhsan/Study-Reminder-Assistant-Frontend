@@ -6,6 +6,7 @@ import { TelemetryCards } from "@/components/dashboard/telemetry-cards";
 import { TelemetryChart } from "@/components/dashboard/telemetry-chart";
 import { PomodoroTimer } from "@/components/dashboard/pomodoro-timer";
 import { PomodoroLogCard } from "@/components/dashboard/pomodoro-log-card";
+import { LearningStatsCard } from "@/components/dashboard/learning-stats-card";
 import { useTelemetry } from "@/hooks/use-telemetry";
 import { usePomodoro } from "@/hooks/use-pomodoro";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -258,9 +259,14 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Bottom Row: Pomodoro Log full-width */}
+            {/* Middle Row: Pomodoro Log full-width */}
             <div>
               <PomodoroLogCard currentSessionId={sessionId} />
+            </div>
+
+            {/* Bottom Row: Statistics Panel (Evaluasi diletakkan di akhir sebagai laporan) */}
+            <div>
+              <LearningStatsCard />
             </div>
           </main>
         </div>
