@@ -29,6 +29,9 @@
 [![Repo Size](https://img.shields.io/github/repo-size/El-Ikhsan/Study-Reminder-Assistant-Frontend?style=flat-square&color=blue)](https://github.com/El-Ikhsan/Study-Reminder-Assistant-Frontend)
 [![GitHub Issues](https://img.shields.io/github/issues/El-Ikhsan/Study-Reminder-Assistant-Frontend?style=flat-square&color=orange)](https://github.com/El-Ikhsan/Study-Reminder-Assistant-Frontend/issues)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+![React](https://img.shields.io/badge/React-61DAFB.svg?style=flat-square&logo=react&logoColor=black)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-%23006199.svg?style=flat-square&logo=tailwindcss&logoColor=white)
+![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000.svg?style=flat-square&logo=shadcnui&logoColor=white)
 
 </div>
 
